@@ -9,6 +9,7 @@ import { Interpreter } from './interpreter.js';
 
 let pendingInputResolve = null;
 let inputIdCounter = 0;
+let interpreter = null;
 
 self.onmessage = async (e) => {
   const { type, code } = e.data;
@@ -22,7 +23,7 @@ self.onmessage = async (e) => {
       const parser = new Parser(tokens);
       const ast = parser.parse();
 
-      const interpreter = new Interpreter();
+      interpreter = new Interpreter();
 
       interpreter.setOutputCallback((text) => {
         self.postMessage({ type: 'output', text });
@@ -41,13 +42,21 @@ self.onmessage = async (e) => {
       const execTime = Math.round(performance.now() - startTime);
       self.postMessage({ type: 'done', output: result.output, execTime });
     } catch (err) {
-      self.postMessage({ type: 'error', text: err.message });
+      if (err.message === '__STOPPED__') {
+        self.postMessage({ type: 'stopped' });
+      } else {
+        self.postMessage({ type: 'error', text: err.message });
+      }
     }
   } else if (type === 'input_response') {
     if (pendingInputResolve && pendingInputResolve.id === e.data.id) {
       const resolve = pendingInputResolve.resolve;
       pendingInputResolve = null;
       resolve(e.data.value);
+    }
+  } else if (type === 'stop') {
+    if (interpreter) {
+      interpreter.stop();
     }
   }
 };

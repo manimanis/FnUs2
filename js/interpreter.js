@@ -15,6 +15,11 @@ class Interpreter {
     this.inputCallback = null;
     this.outputCallback = null;
     this._returnValue = { set: false, value: null };
+    this._stopped = false;
+  }
+
+  stop() {
+    this._stopped = true;
   }
 
   setOutputCallback(cb) { this.outputCallback = cb; }
@@ -38,7 +43,6 @@ class Interpreter {
       case 'caractère': return '';
       case 'chaîne': return '';
       default:
-        // Check if it's a user-defined array type
         const td = this.typeDefs[type];
         if (td) {
           const arr = new Array(td.arraySize);
@@ -61,10 +65,10 @@ class Interpreter {
     this.procedures = {};
     this.typeDefs = {};
     this._returnValue = { set: false, value: null };
+    this._stopped = false;
 
     let mainBody = null;
 
-    // First pass: collect declarations
     for (const decl of ast.declarations) {
       if (decl.type === 'TypeDecl') this.typeDefs[decl.name] = decl;
       else if (decl.type === 'Procedure') this.procedures[decl.name.toLowerCase()] = decl;
@@ -78,13 +82,11 @@ class Interpreter {
       }
     }
 
-    // Execute main program block if it exists
     if (mainBody) {
       await this.executeBlock(mainBody, this.globalEnv);
       return { output: this.output };
     }
 
-    // Find and execute main procedure
     if (this.procedures['main']) { await this.executeProcedure('main', [], this.globalEnv); return { output: this.output }; }
     if (this.procedures['principal']) { await this.executeProcedure('principal', [], this.globalEnv); return { output: this.output }; }
 
@@ -160,6 +162,7 @@ class Interpreter {
 
   async executeBlock(statements, env) {
     for (const stmt of statements) {
+      if (this._stopped) throw new Error('__STOPPED__');
       await this.executeStatement(stmt, env);
       if (this._returnValue && this._returnValue.set) return;
     }
@@ -167,6 +170,7 @@ class Interpreter {
 
   async executeStatement(stmt, env) {
     if (this._returnValue && this._returnValue.set) return;
+    if (this._stopped) throw new Error('__STOPPED__');
 
     switch (stmt.type) {
       case 'Assign':
@@ -234,7 +238,6 @@ class Interpreter {
     } else if (this.functions[nameLower]) {
       await this.executeFunction(nameLower, args, env);
     } else {
-      // Evaluate as expression to handle built-in functions
       await this.evaluateCall(stmt, env);
     }
   }
@@ -255,35 +258,50 @@ class Interpreter {
   }
 
   async executeFor(stmt, env) {
+    if (this._stopped) throw new Error('__STOPPED__');
     const start = await this.evaluateExpression(stmt.start, env);
     const end = await this.evaluateExpression(stmt.end, env);
     const step = stmt.step ? await this.evaluateExpression(stmt.step, env) : 1;
     if (step > 0) {
       for (let i = start; i <= end; i += step) {
+        if (this._stopped) throw new Error('__STOPPED__');
         env[stmt.varName] = i;
         await this.executeBlock(stmt.body, env);
         if (this._returnValue && this._returnValue.set) return;
+        if (this._stopped) throw new Error('__STOPPED__');
+        await new Promise(resolve => setTimeout(resolve, 0));
       }
     } else {
       for (let i = start; i >= end; i += step) {
+        if (this._stopped) throw new Error('__STOPPED__');
         env[stmt.varName] = i;
         await this.executeBlock(stmt.body, env);
         if (this._returnValue && this._returnValue.set) return;
+        if (this._stopped) throw new Error('__STOPPED__');
+        await new Promise(resolve => setTimeout(resolve, 0));
       }
     }
   }
 
   async executeWhile(stmt, env) {
+    if (this._stopped) throw new Error('__STOPPED__');
     while (await this.evaluateExpression(stmt.condition, env)) {
+      if (this._stopped) throw new Error('__STOPPED__');
       await this.executeBlock(stmt.body, env);
       if (this._returnValue && this._returnValue.set) return;
+      if (this._stopped) throw new Error('__STOPPED__');
+      await new Promise(resolve => setTimeout(resolve, 0));
     }
   }
 
   async executeRepeat(stmt, env) {
+    if (this._stopped) throw new Error('__STOPPED__');
     do {
+      if (this._stopped) throw new Error('__STOPPED__');
       await this.executeBlock(stmt.body, env);
       if (this._returnValue && this._returnValue.set) return;
+      if (this._stopped) throw new Error('__STOPPED__');
+      await new Promise(resolve => setTimeout(resolve, 0));
     } while (!(await this.evaluateExpression(stmt.condition, env)));
   }
 
@@ -357,7 +375,6 @@ class Interpreter {
   async evaluateCall(expr, env) {
     const name = expr.name.toLowerCase();
     const args = expr.args;
-    // Built-in functions
     if (name === 'chr') return String.fromCharCode(await this.evaluateExpression(args[0], env));
     if (name === 'ord') return String(await this.evaluateExpression(args[0], env)).charCodeAt(0);
     if (name === 'long') return String(await this.evaluateExpression(args[0], env)).length;
@@ -398,7 +415,6 @@ class Interpreter {
       return Math.floor(Math.random() * (fin - deb + 1)) + deb;
     }
     if (name === 'ent') return Math.floor(await this.evaluateExpression(args[0], env));
-    // User-defined function
     if (this.functions[name]) return await this.executeFunction(name, args, env);
     throw new Error(`Fonction '${name}' non définie`);
   }

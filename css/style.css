@@ -100,14 +100,14 @@ header .subtitle {
 
 /* === MAIN LAYOUT === */
 .main-container {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     height: calc(100vh - 56px);
     gap: 0;
 }
 
 /* === LEFT PANEL (EDITOR) === */
 .editor-panel {
-    flex: 1;
     display: flex;
     flex-direction: column;
     border-right: 1px solid var(--border);
@@ -134,28 +134,20 @@ header .subtitle {
     overflow: hidden;
 }
 
-.editor-wrapper textarea {
-    width: 100%;
-    height: 100%;
-    background: var(--code-bg);
-    border: none;
-    outline: none;
-    color: var(--text-primary);
-    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-    font-size: 14px;
-    line-height: 1.6;
-    padding: 16px;
-    resize: none;
-    tab-size: 4;
-    white-space: pre;
-    overflow: auto;
+.editor-wrapper {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
 }
 
-.editor-wrapper textarea::placeholder { color: #4a4a6a; }
+.codemirror-wrapper {
+    height: 100%;
+    border-radius: 0;
+    overflow: hidden;
+}
 
 /* === RIGHT PANEL === */
 .output-panel {
-    flex: 1;
     display: flex;
     flex-direction: column;
     background: var(--bg-primary);
@@ -185,6 +177,7 @@ header .subtitle {
 .output-content .output-line.input-line { color: var(--warning); }
 .output-content .output-line.error-line { color: var(--error); background: rgba(244, 67, 54, 0.1); padding: 4px 8px; border-radius: 4px; margin: 2px 0; }
 .output-content .output-line.success-line { color: var(--success); }
+.output-content .output-line.warning-line { color: var(--warning); background: rgba(255, 152, 0, 0.1); padding: 4px 8px; border-radius: 4px; margin: 2px 0; }
 
 /* === TABS === */
 .tabs { display: flex; background: var(--bg-secondary); border-bottom: 1px solid var(--border); }
@@ -206,7 +199,7 @@ header .subtitle {
 
 /* === RESPONSIVE === */
 @media (max-width: 1024px) {
-    .main-container { flex-direction: column; }
+    .main-container { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
     .editor-panel { border-right: none; border-bottom: 1px solid var(--border); max-height: 50vh; }
     .editor-panel, .output-panel { flex: none; }
 }

@@ -4,11 +4,13 @@
       <h1>🔷 ALGO++</h1>
       <span class="subtitle">Interpréteur & Convertisseur d'algorithmes pédagogiques</span>
       <button class="btn btn-primary" @click="runCode" title="Exécuter (Ctrl+Enter)">▶ Exécuter</button>
+      <button class="btn btn-warning" @click="stopExecution" title="Arrêter">⏹ Arrêter</button>
       <button class="btn btn-success" @click="convertCode" title="Convertir en Python">🐍 Convertir</button>
-      <button class="btn btn-warning" @click="loadExample" title="Charger un exemple">📂 Exemple</button>
       <div class="dropdown">
-        <button class="btn btn-info dropdown-toggle" @click="showModularMenu = !showModularMenu" title="Charger un exemple modulaire">📦 Modulaire ▾</button>
-        <div class="dropdown-menu" :class="{ 'dropdown-menu--show': showModularMenu }" @mouseleave="showModularMenu = false">
+        <button class="btn btn-info dropdown-toggle" @click="showModularMenu = !showModularMenu"
+          title="Charger un exemple modulaire">📦 Modulaire ▾</button>
+        <div class="dropdown-menu" :class="{ 'dropdown-menu--show': showModularMenu }"
+          @mouseleave="showModularMenu = false">
           <div class="dropdown-header">Programmes modulaires</div>
           <div v-for="(ex, i) in modularExamples" :key="i" class="dropdown-item" @click="selectModularExample(i)">
             <span class="dropdown-icon">{{ modularIcons[i] }}</span>
@@ -25,9 +27,8 @@
           <span>📝 Éditeur d'algorithme</span>
           <span style="font-size:0.7rem;color:var(--comment);">Ctrl+Enter: Exécuter</span>
         </div>
-        <div class="editor-wrapper">
-          <textarea v-model="code" @keydown.ctrl.enter="runCode"
-            placeholder="Écrivez votre algorithme ici..."></textarea>
+      <div class="editor-wrapper">
+          <CodeMirrorEditor v-model="code" placeholder="Écrivez votre algorithme ici..." />
         </div>
       </div>
 
@@ -78,6 +79,7 @@ import { ref, nextTick, watch, onMounted, onUnmounted } from 'vue';
 import { Lexer } from '../js/lexer.js';
 import { Parser } from '../js/parser.js';
 import { PythonConverter } from '../js/converter.js';
+import CodeMirrorEditor from './components/CodeMirrorEditor.vue';
 
 const activeTab = ref('output');
 const outputLines = ref([]);
@@ -460,6 +462,11 @@ onMounted(() => {
       execTime.value = data.execTime;
       executing.value = false;
       scrollOutput();
+    } else if (data.type === 'stopped') {
+      outputLines.value.push({ text: '⛔ Exécution arrêtée par l\'utilisateur.', type: 'warning' });
+      execTime.value = Math.round(performance.now() - startTime);
+      executing.value = false;
+      scrollOutput();
     } else if (data.type === 'error') {
       outputLines.value.push({ text: `❌ ${data.text}`, type: 'error' });
       execTime.value = Math.round(performance.now() - startTime);
@@ -511,6 +518,19 @@ function runCode() {
   }
 }
 
+function stopExecution() {
+  if (executing.value) {
+    try {
+      worker.postMessage({ type: 'stop', code: '' })
+    } catch (err) {
+      outputLines.value.push({ text: `❌ ${err.message}`, type: 'error' });
+      execTime.value = Math.round(performance.now() - startTime);
+      executing.value = false;
+      scrollOutput();
+    }
+  }
+}
+
 function convertCode() {
   pythonCode.value = '';
   activeTab.value = 'python';
@@ -534,75 +554,6 @@ function copyPython() {
       showMessage('✅ Copié !');
     }).catch(() => showMessage('❌ Copie échouée'));
   }
-}
-
-function loadExample() {
-  const examples = [
-    `Var n, s: entier
-
-Début
-  s ← 0
-  Pour i de 1 à 10 Faire
-    s ← s + i
-  Fin Pour
-  Ecrire("s =", s)
-Fin`,
-    `Var a, b, c, max: entier
-Début
-  a ← 15; b ← 27; c ← 9
-  Si a > b Alors max ← a Sinon max ← b Fin Si
-  Si c > max Alors max ← c Fin Si
-  Ecrire("Le maximum est:", max)
-Fin`,
-    `Var n, somme: entier
-Début
-  n ← 1; somme ← 0
-  Tant Que n <= 10 Faire
-    somme ← somme + n
-    n ← n + 1
-  Fin Tant Que
-  Ecrire("Somme:", somme)
-Fin`,
-    `Type tab = tableau de 10 entier
-Var t: tab; i: entier
-Début
-  Pour i de 1 à 10 Faire
-    t[i-1] ← i * 2
-  Fin Pour
-  Pour i de 0 à 9 Faire
-    Ecrire("t[", i, "] =", t[i])
-  Fin Pour
-Fin`,
-    `Fonction factorielle(n: entier): entier
-Var i, f: entier
-Début
-  f ← 1
-  Pour i de 1 à n Faire
-    f ← f * i
-  Fin Pour
-  Retourner f
-Fin
-
-Var resultat: entier
-Début
-  resultat ← factorielle(5)
-  Ecrire("5! =", resultat)
-Fin`,
-    `Var n, cpt: entier
-Début
-  cpt ← 0; n ← 1
-  Répéter
-    n ← n * 2
-    cpt ← cpt + 1
-  Jusqu'à n >= 100
-  Ecrire("2^", cpt, "=", n)
-Fin`
-  ];
-  const current = examples[Math.floor(Math.random() * examples.length)];
-  code.value = current;
-  outputLines.value.splice(0);
-  pythonCode.value = '';
-  showMessage('📂 Exemple chargé !');
 }
 
 function clearAll() {
