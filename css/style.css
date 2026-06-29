@@ -162,7 +162,6 @@ header .subtitle {
 .output-section:last-child { border-bottom: none; }
 
 .output-content {
-    flex: 1;
     padding: 12px 16px;
     font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
     font-size: 13px;
@@ -171,6 +170,7 @@ header .subtitle {
     background: var(--code-bg);
     white-space: pre-wrap;
     color: var(--text-primary);
+    height: calc(100vh - 129px);
 }
 
 .output-content .output-line { padding: 2px 0; }
