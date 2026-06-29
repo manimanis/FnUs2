@@ -27,7 +27,7 @@
           <span>📝 Éditeur d'algorithme</span>
           <span style="font-size:0.7rem;color:var(--comment);">Ctrl+Enter: Exécuter</span>
         </div>
-      <div class="editor-wrapper">
+        <div class="editor-wrapper">
           <CodeMirrorEditor v-model="code" placeholder="Écrivez votre algorithme ici..." />
         </div>
       </div>
@@ -56,8 +56,8 @@
             <button class="btn btn-outline" @click="copyPython" style="font-size:0.7rem;padding:4px 10px;">📋
               Copier</button>
           </div>
-          <div class="output-content" style="color:#c3e88d;">
-            <pre v-if="pythonCode" style="margin:0;white-space:pre-wrap;font-family:inherit;">{{ pythonCode }}</pre>
+          <div class="output-content">
+            <PythonHighlight v-if="pythonCode" ref="pythonElement" :code="pythonCode" />
             <div v-else style="color:var(--comment);font-style:italic;">🐍 Convertir pour générer le code Python...
             </div>
           </div>
@@ -80,10 +80,12 @@ import { Lexer } from '../js/lexer.js';
 import { Parser } from '../js/parser.js';
 import { PythonConverter } from '../js/converter.js';
 import CodeMirrorEditor from './components/CodeMirrorEditor.vue';
+import PythonHighlight from './components/PythonHighlight.vue';
 
 const activeTab = ref('output');
 const outputLines = ref([]);
 const pythonCode = ref('');
+const pythonElement = ref(null);
 const executing = ref(false);
 const execTime = ref(null);
 const showSnackbar = ref(false);
@@ -285,17 +287,25 @@ Début
 Fin`,
   // 6. Vérification nombre premier et décomposition
   `Fonction estPremier(n: entier): booleen
-Var i: entier
+Var i, mx: entier
+    test: booleen
 Début
   Si n < 2 Alors
-    Retourner Faux
+    test ← Faux
+  Sinon Si n = 2 ou n = 3 Alors
+    test ← Vrai
+  Sinon Si n mod 2 = 0 ou n mod 3 = 0 Alors
+    test ← Faux
+  Sinon
+    test ← Vrai
   Fin Si
-  Pour i de 2 à n-1 Faire
-    Si n % i = 0 Alors
-      Retourner Faux
-    Fin Si
-  Fin Pour
-  Retourner Vrai
+  i ← 5
+  mx ← Ent(Racine(n) + 1) 
+  Tant Que test et i <= mx  Faire
+    test ← n mod i != 0
+    i ← i + 2
+  Fin Tant Que
+  Retourner test
 Fin
 
 Procédure afficherPremiers(limite: entier)
@@ -317,7 +327,7 @@ Début
   Sinon
     Ecrire(nombre, "n'est pas premier")
   Fin Si
-  afficherPremiers(50)
+  afficherPremiers(150)
 Fin`,
   // 7. Manipulation de chaînes avec fonctions
   `Fonction compterVoyelles(ch: chaine): entier
@@ -550,9 +560,20 @@ function convertCode() {
 
 function copyPython() {
   if (pythonCode.value) {
-    navigator.clipboard.writeText(pythonCode.value).then(() => {
-      showMessage('✅ Copié !');
-    }).catch(() => showMessage('❌ Copie échouée'));
+    new Promise(
+      (resolve, reject) => {
+        try {
+          copy();
+          resolve();
+        } catch (e) {
+          reject(e);
+        }
+      }
+    )
+      .then(() => {
+        showMessage('✅ Copié !');
+      })
+      .catch((e) => showMessage('❌ Copie échouée' + e));
   }
 }
 
@@ -563,5 +584,66 @@ function clearAll() {
   activeTab.value = 'output';
   sessionStorage.removeItem(STORAGE_KEY);
   showMessage('🗑 Tout effacé');
+}
+
+function cloneWithInlineStyles(element) {
+  // Cloner le noeud
+  const clone = element.cloneNode(true);
+
+  // Fonction pour copier les styles calculés
+  function applyInlineStyles(source, target) {
+    const computedStyle = window.getComputedStyle(source);
+
+    // Liste des propriétés liées aux couleurs
+    const colorProperties = [
+      "color",
+      "background-color",
+      "border-color",
+      "border-top-color",
+      "border-right-color",
+      "border-bottom-color",
+      "border-left-color",
+      "outline-color",
+      "text-decoration-color",
+      "box-shadow"
+    ];
+
+    // Appliquer uniquement les styles de couleur
+    colorProperties.forEach(prop => {
+      const value = computedStyle.getPropertyValue(prop);
+      if (value && value !== "rgba(0, 0, 0, 0)") {
+        target.style.setProperty(prop, value);
+      }
+    });
+
+    // Supprimer toutes les classes
+    target.removeAttribute("class");
+  }
+
+  // Parcourir tous les éléments (original + clone)
+  const sourceElements = [element, ...element.querySelectorAll("*")];
+  const targetElements = [clone, ...clone.querySelectorAll("*")];
+
+  sourceElements.forEach((srcEl, index) => {
+    const targetEl = targetElements[index];
+    applyInlineStyles(srcEl, targetEl);
+  });
+
+  return clone;
+}
+
+function copy() {
+  const el = cloneWithInlineStyles(pythonElement.value?.preElement);
+
+  el.innerHTML = "<p>" + el.innerHTML
+    .replaceAll('\n', '</p><p>')
+    .replaceAll('    ', '&nbsp;&nbsp;&nbsp;&nbsp;')
+    + "</p>";
+  navigator.clipboard.write([
+    new ClipboardItem({
+      "text/html": new Blob([el.innerHTML], { type: "text/html" }),
+      "text/plain": new Blob([el.innerText], { type: "text/plain" })
+    })
+  ]);
 }
 </script>
