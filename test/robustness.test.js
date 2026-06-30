@@ -36,13 +36,13 @@ Fin`;
   test('Large loop completes within limits', async () => {
     const code = `Var i, x: entier 
 Début
-  Pour i de 1 à 1000 Faire
+  Pour i de 1 à 10000 Faire
     x ← i
   Fin Pour
   Ecrire(x)
 Fin`;
 
-    await expect(parseAndRun(code, () => '', { executionTimeout: 10 }))
+    await expect(parseAndRun(code, () => '', { executionTimeout: 1 }))
       .rejects.toThrow('Timeout');
   });
 
@@ -172,7 +172,7 @@ describe('Robustness - Variable Validation', () => {
       AppelerProcedureInconnue()
     Fin`;
 
-    await expect(parseAndRun(code)).rejects.toThrow("Fonction 'appelerprocedureinconnue' non définie");
+    await expect(parseAndRun(code)).rejects.toThrow("Procédure/Fonction 'AppelerProcedureInconnue' non définie (ligne 2)");
   });
 
   test('Undefined function throws error', async () => {

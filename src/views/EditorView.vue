@@ -1,21 +1,38 @@
 <template>
-  <div class="main-container">
-    <div class="editor-panel">
+  <div class="main-container" :class="{ 'split-view': splitView, 'presentation-mode': presentationMode, 'fullscreen': isFullscreen }">
+    <div class="editor-panel" :style="splitView ? { flex: `0 0 ${editorWidth}%` } : {}">
       <div class="panel-header">
         <span>📝 Éditeur d'algorithme</span>
-        <span style="font-size:0.7rem;color:var(--comment);">Ctrl+Enter: Exécuter</span>
+        <div class="header-actions">
+          <span style="font-size:0.7rem;color:var(--comment);">Ctrl+Enter: Exécuter</span>
+          <button class="btn-icon" @click="toggleSplitView" :title="splitView ? 'Vue unifiée' : 'Vue splitée'">
+            {{ splitView ? '◀' : '▶' }}
+          </button>
+        </div>
       </div>
       <div class="editor-wrapper">
-        <CodeMirrorEditor v-model="code" placeholder="Écrivez votre algorithme ici..." :dark="darkMode" />
+        <CodeMirrorEditor 
+          v-model="code" 
+          placeholder="Écrivez votre algorithme ici..." 
+          :dark="darkMode"
+          :fontSize="fontSize"
+        />
       </div>
     </div>
 
-    <div class="output-panel">
+    <div v-if="splitView" class="resizer" @mousedown="startResize"></div>
+
+    <div class="output-panel" v-show="splitView || !splitView">
       <div class="output-section" v-if="activeTab === 'output'">
         <div class="panel-header">
           <span>🖥 Sortie d'exécution</span>
-          <span v-if="executing" style="color:var(--warning)">⏳ Exécution...</span>
-          <span v-if="execTime" style="font-size:0.7rem;color:var(--comment)">{{ execTime }}ms</span>
+          <div class="header-actions">
+            <span v-if="executing" style="color:var(--warning)">⏳ Exécution...</span>
+            <span v-if="execTime" style="font-size:0.7rem;color:var(--comment)">{{ execTime }}ms</span>
+            <button class="btn-icon" @click="exportOutput" title="Exporter TXT">📥</button>
+            <button class="btn-icon" @click="exportPDF" title="Exporter PDF">📄</button>
+            <button class="btn-icon" @click="takeScreenshot" title="Capture d'écran">📷</button>
+          </div>
         </div>
         <div class="output-content" ref="outputContainer">
           <div v-for="(line, i) in outputLines" :key="i"
@@ -31,10 +48,12 @@
       <div class="output-section" v-if="activeTab === 'python'">
         <div class="panel-header">
           <span>🐍 Code Python généré</span>
-          <button class="btn btn-outline" @click="copyPython" style="font-size:0.7rem;padding:4px 10px;">📋
-            Copier</button>
+          <div class="header-actions">
+            <button class="btn btn-outline" @click="copyPython" style="font-size:0.7rem;padding:4px 10px;">📋 Copier</button>
+            <button class="btn-icon" @click="takeScreenshot" title="Capture d'écran">📷</button>
+          </div>
         </div>
-        <div class="output-content">
+        <div class="output-content" ref="pythonContainer">
           <PythonHighlight v-if="pythonCode" ref="pythonElement" :code="pythonCode" :dark="darkMode" />
           <div v-else style="color:var(--comment);font-style:italic;">🐍 Convertir pour générer le code Python...
           </div>
@@ -73,8 +92,20 @@ const pythonElement = ref(null);
 const executing = ref(false);
 const execTime = ref(null);
 const outputContainer = ref(null);
+const pythonContainer = ref(null);
 let snackbarTimer = null;
 let worker = null;
+
+// Nouvelles fonctionnalités
+const splitView = ref(true);
+const editorWidth = ref(50);
+const isResizing = ref(false);
+const fontSize = ref(13);
+const presentationMode = ref(false);
+const isFullscreen = ref(false);
+const FONT_SIZE_KEY = 'algo-plus-plus-font-size';
+const SPLIT_VIEW_KEY = 'algo-plus-plus-split-view';
+const EDITOR_WIDTH_KEY = 'algo-plus-plus-editor-width';
 
 const code = ref(`Var n, s: entier
 
@@ -119,10 +150,40 @@ function loadState() {
       if (state.execTime !== undefined) execTime.value = state.execTime;
     }
   } catch (e) { /* ignore */ }
+  
+  // Charger les préférences utilisateur
+  try {
+    const savedFontSize = localStorage.getItem(FONT_SIZE_KEY);
+    if (savedFontSize) fontSize.value = parseInt(savedFontSize);
+    
+    const savedSplitView = localStorage.getItem(SPLIT_VIEW_KEY);
+    if (savedSplitView !== null) splitView.value = savedSplitView === 'true';
+    
+    const savedEditorWidth = localStorage.getItem(EDITOR_WIDTH_KEY);
+    if (savedEditorWidth) editorWidth.value = parseInt(savedEditorWidth);
+  } catch (e) { /* ignore */ }
 }
 
 watch([code, outputLines, pythonCode, activeTab, execTime], () => {
   saveState();
+});
+
+watch(fontSize, (newSize) => {
+  try {
+    localStorage.setItem(FONT_SIZE_KEY, newSize.toString());
+  } catch (e) { /* ignore */ }
+});
+
+watch(splitView, (newValue) => {
+  try {
+    localStorage.setItem(SPLIT_VIEW_KEY, newValue.toString());
+  } catch (e) { /* ignore */ }
+});
+
+watch(editorWidth, (newWidth) => {
+  try {
+    localStorage.setItem(EDITOR_WIDTH_KEY, newWidth.toString());
+  } catch (e) { /* ignore */ }
 });
 
 // Listen for events dispatched by App.vue header buttons
@@ -187,6 +248,13 @@ onMounted(() => {
   window.addEventListener('editor-convert', handleEditorConvert);
   window.addEventListener('editor-clear', handleEditorClear);
   window.addEventListener('editor-set-code', handleEditorSetCode);
+  window.addEventListener('editor-change-font-size', handleChangeFontSize);
+  window.addEventListener('editor-toggle-presentation', togglePresentationMode);
+  window.addEventListener('editor-toggle-fullscreen', toggleFullscreen);
+  
+  // Raccourcis clavier
+  document.addEventListener('keydown', handleKeydown);
+  document.addEventListener('fullscreenchange', handleFullscreenChange);
 });
 
 onUnmounted(() => {
@@ -196,6 +264,11 @@ onUnmounted(() => {
   window.removeEventListener('editor-convert', handleEditorConvert);
   window.removeEventListener('editor-clear', handleEditorClear);
   window.removeEventListener('editor-set-code', handleEditorSetCode);
+  window.removeEventListener('editor-change-font-size', handleChangeFontSize);
+  window.removeEventListener('editor-toggle-presentation', togglePresentationMode);
+  window.removeEventListener('editor-toggle-fullscreen', toggleFullscreen);
+  document.removeEventListener('keydown', handleKeydown);
+  document.removeEventListener('fullscreenchange', handleFullscreenChange);
 });
 
 function scrollOutput() {
@@ -252,6 +325,134 @@ function convertCode() {
   } catch (err) {
     pythonCode.value = `# ERREUR: ${err.message}`;
     showMessage('❌ Erreur de conversion');
+  }
+}
+
+// Vue splitée
+function toggleSplitView() {
+  splitView.value = !splitView.value;
+}
+
+function startResize(e) {
+  isResizing.value = true;
+  document.addEventListener('mousemove', resize);
+  document.addEventListener('mouseup', stopResize);
+}
+
+function resize(e) {
+  if (!isResizing.value) return;
+  const container = document.querySelector('.main-container');
+  const containerRect = container.getBoundingClientRect();
+  const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+  editorWidth.value = Math.min(Math.max(newWidth, 20), 80);
+}
+
+function stopResize() {
+  isResizing.value = false;
+  document.removeEventListener('mousemove', resize);
+  document.removeEventListener('mouseup', stopResize);
+}
+
+// Taille de police
+function changeFontSize(delta) {
+  const newSize = fontSize.value + delta;
+  if (newSize >= 10 && newSize <= 24) {
+    fontSize.value = newSize;
+  }
+}
+
+function handleChangeFontSize(e) {
+  if (e.detail && e.detail.delta) {
+    changeFontSize(e.detail.delta);
+  }
+}
+
+// Mode présentation
+function togglePresentationMode() {
+  presentationMode.value = !presentationMode.value;
+  if (presentationMode.value) {
+    splitView.value = true;
+    editorWidth.value = 50;
+  }
+}
+
+// Mode plein écran
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(err => {
+      showMessage('❌ Impossible de passer en plein écran');
+    });
+  } else {
+    document.exitFullscreen();
+  }
+}
+
+function handleFullscreenChange() {
+  isFullscreen.value = !!document.fullscreenElement;
+}
+
+// Export TXT
+function exportOutput() {
+  if (outputLines.value.length === 0) {
+    showMessage('⚠️ Aucune sortie à exporter');
+    return;
+  }
+  
+  const text = outputLines.value.map(line => line.text).join('\n');
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `sortie-${Date.now()}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showMessage('✅ Export TXT réussi !');
+}
+
+// Export PDF (simplifié - nécessite une librairie comme jsPDF pour une vraie implémentation)
+function exportPDF() {
+  showMessage('⚠️ Export PDF nécessite une librairie externe (jsPDF)');
+  // Pour une implémentation complète, installer jsPDF et décommenter:
+  // const { jsPDF } = require('jspdf');
+  // const doc = new jsPDF();
+  // outputLines.value.forEach((line, i) => doc.text(line.text, 10, 10 + i * 7));
+  // doc.save(`sortie-${Date.now()}.pdf`);
+}
+
+// Capture d'écran
+function takeScreenshot() {
+  showMessage('📷 Capture d\'écran - Utilisez l\'outil de capture de votre système (Win+Shift+S)');
+}
+
+// Raccourcis clavier
+function handleKeydown(e) {
+  // Ctrl/Cmd + Plus/Moins pour la taille de police
+  if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) {
+    e.preventDefault();
+    changeFontSize(1);
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+    e.preventDefault();
+    changeFontSize(-1);
+  }
+  
+  // F11 pour plein écran
+  if (e.key === 'F11') {
+    e.preventDefault();
+    toggleFullscreen();
+  }
+  
+  // Ctrl/Cmd + P pour mode présentation
+  if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+    e.preventDefault();
+    togglePresentationMode();
+  }
+  
+  // Ctrl/Cmd + S pour sauvegarder
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault();
+    saveState();
+    showMessage('✅ État sauvegardé');
   }
 }
 
@@ -314,4 +515,22 @@ function copy() {
     })
   ]);
 }
+
+// Exposer les méthodes pour App.vue
+defineExpose({
+  toggleSplitView,
+  togglePresentationMode,
+  toggleFullscreen,
+  changeFontSize,
+  exportOutput,
+  exportPDF,
+  takeScreenshot,
+  getState: () => ({
+    splitView: splitView.value,
+    editorWidth: editorWidth.value,
+    fontSize: fontSize.value,
+    presentationMode: presentationMode.value,
+    isFullscreen: isFullscreen.value
+  })
+});
 </script>

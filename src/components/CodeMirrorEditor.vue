@@ -50,7 +50,7 @@ const pseudoCodeLanguage = StreamLanguage.define({
       if (builtins.has(word)) return 'builtin';
       return 'variable';
     }
-    const operators = ['←', '<-', '!=', '<=', '>=', '≤', '≥', '=', '<', '>', '+', '-', '*', '/', ';'];
+    const operators = ['←', '<-', '!=', '≠', '<=', '>=', '≤', '≥', '=', '<', '>', '+', '-', '*', '/', ';'];
     operators.forEach(op => {
       if (stream.match(op)) return 'operator';
     });
@@ -113,6 +113,10 @@ const props = defineProps({
   dark: {
     type: Boolean,
     default: true
+  },
+  fontSize: {
+    type: Number,
+    default: 13
   }
 });
 
@@ -134,7 +138,7 @@ const placeholderExt = EditorView.contentAttributes.of({
 // Shared base theme for consistent sizing across both modes
 const baseTheme = EditorView.theme({
   '&': {
-    fontSize: '14px'
+    fontSize: `${props.fontSize}px`
   },
   '.cm-scroller': {
     fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
@@ -301,6 +305,14 @@ function buildView() {
     state,
     parent: editorContainer.value
   });
+  
+  // Appliquer la taille de police
+  if (view && props.fontSize) {
+    const scroller = view.scrollDOM;
+    if (scroller) {
+      scroller.style.fontSize = `${props.fontSize}px`;
+    }
+  }
 }
 
 onMounted(() => {
@@ -327,6 +339,15 @@ watch(() => props.modelValue, (newValue) => {
 
 watch(() => props.dark, () => {
   buildView();
+});
+
+watch(() => props.fontSize, (newSize) => {
+  if (view) {
+    const scroller = view.scrollDOM;
+    if (scroller) {
+      scroller.style.fontSize = `${newSize}px`;
+    }
+  }
 });
 </script>
 

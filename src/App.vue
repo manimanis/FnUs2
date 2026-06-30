@@ -4,39 +4,77 @@
     <header v-if="$route.name === 'editor'">
       <h1>🔷 ALGO++</h1>
       <span class="subtitle">Interpréteur & Convertisseur d'algorithmes pédagogiques</span>
-      <button class="btn btn-primary" @click="runCode" title="Exécuter (Ctrl+Enter)">▶ Exécuter</button>
-      <button class="btn btn-warning" @click="stopExecution" title="Arrêter">⏹ Arrêter</button>
-      <button class="btn btn-success" @click="convertCode" title="Convertir en Python">🐍 Convertir</button>
-      <button class="btn btn-info" @click="toggleTheme" :title="darkMode ? 'Mode clair' : 'Mode sombre'">
-        {{ darkMode ? '☀️' : '🌙' }}
-      </button>
-      <div class="dropdown">
-        <button class="btn btn-info dropdown-toggle" @click="showModularMenu = !showModularMenu"
-          title="Charger un exemple modulaire">📦 Modulaire ▾</button>
-        <div class="dropdown-menu" :class="{ 'dropdown-menu--show': showModularMenu }"
-          @mouseleave="showModularMenu = false">
-          <div class="dropdown-header">Programmes modulaires</div>
-          <div v-for="(ex, i) in modularExamples" :key="i" class="dropdown-item" @click="selectModularExample(i)">
-            <span class="dropdown-icon">{{ modularIcons[i] }}</span>
-            <span>{{ modularTitles[i] }}</span>
+      
+      <div class="header-group">
+        <button class="btn btn-primary" @click="runCode" title="Exécuter (Ctrl+Enter)">▶ Exécuter</button>
+        <button class="btn btn-warning" @click="stopExecution" title="Arrêter">⏹ Arrêter</button>
+        <button class="btn btn-success" @click="convertCode" title="Convertir en Python">🐍 Convertir</button>
+      </div>
+      
+      <div class="header-group">
+        <button class="btn btn-info" @click="toggleTheme" :title="darkMode ? 'Mode clair' : 'Mode sombre'">
+          {{ darkMode ? '☀️' : '🌙' }}
+        </button>
+        <div class="dropdown">
+          <button class="btn btn-info dropdown-toggle" @click="showSettingsMenu = !showSettingsMenu"
+            title="Paramètres">⚙️ ▾</button>
+          <div class="dropdown-menu" :class="{ 'dropdown-menu--show': showSettingsMenu }"
+            @mouseleave="showSettingsMenu = false">
+            <div class="dropdown-header">Affichage</div>
+            <div class="dropdown-item" @click="changeFontSize(1)">
+              <span class="dropdown-icon">🔍+</span>
+              <span>Augmenter la taille de police</span>
+            </div>
+            <div class="dropdown-item" @click="changeFontSize(-1)">
+              <span class="dropdown-icon">🔍-</span>
+              <span>Réduire la taille de police</span>
+            </div>
+            <div class="dropdown-header" style="margin-top: 8px;">Modes</div>
+            <div class="dropdown-item" @click="togglePresentationMode">
+              <span class="dropdown-icon">📽</span>
+              <span>Mode présentation (Ctrl+P)</span>
+            </div>
+            <div class="dropdown-item" @click="toggleFullscreen">
+              <span class="dropdown-icon">⛶</span>
+              <span>Plein écran (F11)</span>
+            </div>
+          </div>
+        </div>
+        <div class="dropdown">
+          <button class="btn btn-info dropdown-toggle" @click="showModularMenu = !showModularMenu"
+            title="Charger un exemple modulaire">📦 Modulaire ▾</button>
+          <div class="dropdown-menu" :class="{ 'dropdown-menu--show': showModularMenu }"
+            @mouseleave="showModularMenu = false">
+            <div class="dropdown-header">Programmes modulaires</div>
+            <div v-for="(ex, i) in modularExamples" :key="i" class="dropdown-item" @click="selectModularExample(i)">
+              <span class="dropdown-icon">{{ modularIcons[i] }}</span>
+              <span>{{ modularTitles[i] }}</span>
+            </div>
           </div>
         </div>
       </div>
-      <router-link to="/fonctions" class="nav-link" title="Référence des fonctions usuelles">📖 Fonctions</router-link>
-      <button class="btn btn-danger" @click="clearAll" title="Tout effacer">🗑 Effacer</button>
+      
+      <div class="header-group header-group-left">
+        <router-link to="/fonctions" class="nav-link" title="Référence des fonctions usuelles">📖 Fonctions</router-link>
+        <button class="btn btn-danger" @click="clearAll" title="Tout effacer">🗑 Effacer</button>
+      </div>
     </header>
 
     <!-- Header for the fonctions page -->
     <header v-else>
       <h1>🔷 ALGO++</h1>
       <span class="subtitle">Fonctions usuelles — Référence interactive</span>
-      <router-link to="/" class="nav-link" title="Retour à l'éditeur">← Éditeur</router-link>
-      <button class="btn btn-info" @click="toggleTheme" :title="darkMode ? 'Mode clair' : 'Mode sombre'">
-        {{ darkMode ? '☀️' : '🌙' }}
-      </button>
+      
+      <div class="header-group header-group-left">
+        <router-link to="/" class="nav-link" title="Retour à l'éditeur">← Éditeur</router-link>
+        <button class="btn btn-info" @click="toggleTheme" :title="darkMode ? 'Mode clair' : 'Mode sombre'">
+          {{ darkMode ? '☀️' : '🌙' }}
+        </button>
+      </div>
     </header>
 
     <router-view
+      ref="editorViewRef"
       :darkMode="darkMode"
       @message="showMessage"
     />
@@ -54,12 +92,15 @@ import { PythonConverter } from '../js/converter.js';
 
 const router = useRouter();
 
+const editorViewRef = ref(null);
+
 const showSnackbar = ref(false);
 const snackbarMessage = ref('');
 let snackbarTimer = null;
 
 const darkMode = ref(true);
 const showModularMenu = ref(false);
+const showSettingsMenu = ref(false);
 const THEME_STORAGE_KEY = 'algo-plus-plus-theme';
 
 const modularTitles = [
@@ -352,11 +393,7 @@ Début
 Fin`
 ];
 
-// Ref for the editor view instance to call methods
-const editorRef = ref(null);
-
 function runCode() {
-  // The editor view will receive this via router-view ref
   const el = document.querySelector('.main-container');
   if (el) {
     const event = new CustomEvent('editor-run');
@@ -387,7 +424,6 @@ const modularExampleIndex = ref(0);
 
 function selectModularExample(index) {
   modularExampleIndex.value = index;
-  // Write the code through the event system
   window.dispatchEvent(new CustomEvent('editor-set-code', { detail: { code: modularExamples[index] } }));
   showModularMenu.value = false;
   showMessage(`📦 ${modularTitles[index]} chargé !`);
@@ -405,6 +441,24 @@ function handleClickOutside(e) {
   if (showModularMenu.value && !e.target.closest('.dropdown')) {
     showModularMenu.value = false;
   }
+  if (showSettingsMenu.value && !e.target.closest('.dropdown')) {
+    showSettingsMenu.value = false;
+  }
+}
+
+function changeFontSize(delta) {
+  window.dispatchEvent(new CustomEvent('editor-change-font-size', { detail: { delta } }));
+  showSettingsMenu.value = false;
+}
+
+function togglePresentationMode() {
+  window.dispatchEvent(new CustomEvent('editor-toggle-presentation'));
+  showSettingsMenu.value = false;
+}
+
+function toggleFullscreen() {
+  window.dispatchEvent(new CustomEvent('editor-toggle-fullscreen'));
+  showSettingsMenu.value = false;
 }
 
 onMounted(() => {

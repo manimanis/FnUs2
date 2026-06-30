@@ -152,10 +152,10 @@ Début
   nm ← 0
   Tant que i < Long(ch) et test faire
     test ← "A" ≤ majus(ch[i]) ≤ "Z" ou ch[i] = " "
-    i ← i + 1
     Si ch[i] = " " alors
       nm ← nm + 1
     Fin Si
+    i ← i + 1
   Fin Tant que
   Retourner test et nm ≤ 20
 Fin
