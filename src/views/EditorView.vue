@@ -39,7 +39,18 @@
             :class="['output-line', line.type ? line.type + '-line' : '']">
             {{ line.text }}
           </div>
-          <div v-if="outputLines.length === 0 && !executing" style="color:var(--comment);font-style:italic;">
+          <div v-if="showInputModal" class="input-line">
+            <span class="input-prompt-text">{{ inputModalMessage }}</span>
+            <input
+              ref="inlineInputRef"
+              v-model="inputValue"
+              type="text"
+              @keyup.enter="submitInlineInput"
+              @keyup.esc="cancelInlineInput"
+              class="inline-input"
+            />
+          </div>
+          <div v-if="outputLines.length === 0 && !executing && !showInputModal" style="color:var(--comment);font-style:italic;">
             ▶ Exécuter pour voir les résultats...
           </div>
         </div>
@@ -75,6 +86,9 @@ import { Parser } from '../../js/parser.js';
 import { PythonConverter } from '../../js/converter.js';
 import CodeMirrorEditor from '../components/CodeMirrorEditor.vue';
 import PythonHighlight from '../components/PythonHighlight.vue';
+import { useStorage } from '../composables/useStorage.js';
+import { useWorker } from '../composables/useWorker.js';
+import { useKeyboardShortcuts, createShortcut, createKeyShortcut } from '../composables/useKeyboardShortcuts.js';
 
 const props = defineProps({
   darkMode: {
@@ -85,27 +99,52 @@ const props = defineProps({
 
 const emit = defineEmits(['message']);
 
-const activeTab = ref('output');
-const outputLines = ref([]);
-const pythonCode = ref('');
+// Storage composables
+const { value: activeTab, load: loadTab, save: saveTab } = useStorage('algo-plus-plus-active-tab', 'output', sessionStorage);
+const { value: outputLines, load: loadOutput, save: saveOutput } = useStorage('algo-plus-plus-output', [], sessionStorage);
+const { value: pythonCode, load: loadPython, save: savePython } = useStorage('algo-plus-plus-python', '', sessionStorage);
+const { value: fontSize, load: loadFontSize } = useStorage('algo-plus-plus-font-size', 13);
+const { value: splitView, load: loadSplitView } = useStorage('algo-plus-plus-split-view', true);
+const { value: editorWidth, load: loadEditorWidth } = useStorage('algo-plus-plus-editor-width', 50);
+
+// Refs
 const pythonElement = ref(null);
-const executing = ref(false);
-const execTime = ref(null);
 const outputContainer = ref(null);
 const pythonContainer = ref(null);
-let snackbarTimer = null;
-let worker = null;
-
-// Nouvelles fonctionnalités
-const splitView = ref(true);
-const editorWidth = ref(50);
 const isResizing = ref(false);
-const fontSize = ref(13);
 const presentationMode = ref(false);
 const isFullscreen = ref(false);
-const FONT_SIZE_KEY = 'algo-plus-plus-font-size';
-const SPLIT_VIEW_KEY = 'algo-plus-plus-split-view';
-const EDITOR_WIDTH_KEY = 'algo-plus-plus-editor-width';
+
+// Input inline state
+const showInputModal = ref(false);
+const inputModalMessage = ref('');
+const inputValue = ref('');
+const pendingInputId = ref(null);
+const inlineInputRef = ref(null);
+
+// Auto-focus input when it appears
+watch(showInputModal, (newVal) => {
+  if (newVal) {
+    nextTick(() => {
+      if (inlineInputRef.value) {
+        inlineInputRef.value.focus();
+        inlineInputRef.value.select();
+      }
+    });
+  }
+});
+
+// Worker composable
+const { 
+  worker, 
+  executing, 
+  execTime, 
+  init: initWorker, 
+  terminate: terminateWorker, 
+  postMessage: postWorkerMessage,
+  setExecuting,
+  setExecTime
+} = useWorker('../../js/worker.js');
 
 const code = ref(`Var n, s: entier
 
@@ -123,6 +162,16 @@ const STORAGE_KEY = 'algo-plus-plus-state';
 
 function showMessage(msg) {
   emit('message', msg);
+}
+
+function addOutput(outObj) {
+  const lastOutput = outputLines.value.length > 0 ? outputLines.value[outputLines.value.length - 1] : null;
+  if (lastOutput == null || lastOutput.type !== outObj.type) {
+    outputLines.value.push(outObj);
+  } else {
+    lastOutput.text += outObj.text;
+  }
+  scrollOutput();
 }
 
 function saveState() {
@@ -150,41 +199,12 @@ function loadState() {
       if (state.execTime !== undefined) execTime.value = state.execTime;
     }
   } catch (e) { /* ignore */ }
-  
-  // Charger les préférences utilisateur
-  try {
-    const savedFontSize = localStorage.getItem(FONT_SIZE_KEY);
-    if (savedFontSize) fontSize.value = parseInt(savedFontSize);
-    
-    const savedSplitView = localStorage.getItem(SPLIT_VIEW_KEY);
-    if (savedSplitView !== null) splitView.value = savedSplitView === 'true';
-    
-    const savedEditorWidth = localStorage.getItem(EDITOR_WIDTH_KEY);
-    if (savedEditorWidth) editorWidth.value = parseInt(savedEditorWidth);
-  } catch (e) { /* ignore */ }
 }
 
-watch([code, outputLines, pythonCode, activeTab, execTime], () => {
-  saveState();
-});
-
-watch(fontSize, (newSize) => {
-  try {
-    localStorage.setItem(FONT_SIZE_KEY, newSize.toString());
-  } catch (e) { /* ignore */ }
-});
-
-watch(splitView, (newValue) => {
-  try {
-    localStorage.setItem(SPLIT_VIEW_KEY, newValue.toString());
-  } catch (e) { /* ignore */ }
-});
-
-watch(editorWidth, (newWidth) => {
-  try {
-    localStorage.setItem(EDITOR_WIDTH_KEY, newWidth.toString());
-  } catch (e) { /* ignore */ }
-});
+// Load preferences
+loadFontSize();
+loadSplitView();
+loadEditorWidth();
 
 // Listen for events dispatched by App.vue header buttons
 function handleEditorRun() { runCode(); }
@@ -197,21 +217,17 @@ function handleEditorSetCode(e) {
   pythonCode.value = '';
 }
 
+function handleChangeFontSize(e) {
+  if (e.detail && e.detail.delta) {
+    changeFontSize(e.detail.delta);
+  }
+}
+
 onMounted(() => {
   loadState();
-  worker = new Worker(new URL('../../js/worker.js', import.meta.url), { type: 'module' });
+  initWorker();
 
-  function addOutput(outObj) {
-    const lastOutput = outputLines.value.length > 0 ? outputLines.value[outputLines.value.length - 1] : null;
-    if (lastOutput == null || lastOutput.type !== outObj.type) {
-      outputLines.value.push(outObj);
-    } else {
-      lastOutput.text += outObj.text;
-    }
-    scrollOutput();
-  }
-
-  worker.onmessage = (e) => {
+  worker.value.onmessage = (e) => {
     const data = e.data;
     if (data.type === 'output') {
       if (typeof data.text === 'object' && data.text.type === 'error') {
@@ -220,9 +236,9 @@ onMounted(() => {
         addOutput({ text: String(data.text) });
       }
     } else if (data.type === 'input_request') {
-      const val = window.prompt(data.prompt);
-      addOutput({ text: val });
-      worker.postMessage({ type: 'input_response', id: data.id, value: val });
+      pendingInputId.value = data.id;
+      inputModalMessage.value = data.prompt;
+      showInputModal.value = true;
     } else if (data.type === 'done') {
       if (outputLines.value.length === 0) {
         addOutput({ text: '✅ Programme exécuté avec succès.', type: 'success' });
@@ -233,11 +249,11 @@ onMounted(() => {
       executing.value = false;
     } else if (data.type === 'stopped') {
       addOutput({ text: '⛔ Exécution arrêtée par l\'utilisateur.', type: 'warning' });
-      execTime.value = Math.round(performance.now() - startTime);
+      setExecTime();
       executing.value = false;
     } else if (data.type === 'error') {
       addOutput({ text: `❌ ${data.text}`, type: 'error' });
-      execTime.value = Math.round(performance.now() - startTime);
+      setExecTime();
       executing.value = false;
     }
   };
@@ -253,12 +269,23 @@ onMounted(() => {
   window.addEventListener('editor-toggle-fullscreen', toggleFullscreen);
   
   // Raccourcis clavier
-  document.addEventListener('keydown', handleKeydown);
+  useKeyboardShortcuts([
+    createShortcut(true, '=', changeFontSize.bind(null, 1)),
+    createShortcut(true, '+', changeFontSize.bind(null, 1)),
+    createShortcut(true, '-', changeFontSize.bind(null, -1)),
+    createKeyShortcut('F11', toggleFullscreen),
+    createShortcut(true, 'p', togglePresentationMode),
+    createShortcut(true, 's', () => {
+      saveState();
+      showMessage('✅ État sauvegardé');
+    })
+  ]);
+  
   document.addEventListener('fullscreenchange', handleFullscreenChange);
 });
 
 onUnmounted(() => {
-  if (worker) worker.terminate();
+  terminateWorker();
   window.removeEventListener('editor-run', handleEditorRun);
   window.removeEventListener('editor-stop', handleEditorStop);
   window.removeEventListener('editor-convert', handleEditorConvert);
@@ -267,7 +294,6 @@ onUnmounted(() => {
   window.removeEventListener('editor-change-font-size', handleChangeFontSize);
   window.removeEventListener('editor-toggle-presentation', togglePresentationMode);
   window.removeEventListener('editor-toggle-fullscreen', toggleFullscreen);
-  document.removeEventListener('keydown', handleKeydown);
   document.removeEventListener('fullscreenchange', handleFullscreenChange);
 });
 
@@ -279,21 +305,18 @@ function scrollOutput() {
   });
 }
 
-let startTime = 0;
-
 function runCode() {
   outputLines.value.splice(0);
   pythonCode.value = '';
   activeTab.value = 'output';
-  executing.value = true;
+  setExecuting(true);
   execTime.value = null;
-  startTime = performance.now();
   try {
-    worker.postMessage({ type: 'run', code: code.value });
+    postWorkerMessage({ type: 'run', code: code.value });
   } catch (err) {
     outputLines.value.push({ text: `❌ ${err.message}`, type: 'error' });
-    execTime.value = Math.round(performance.now() - startTime);
-    executing.value = false;
+    setExecTime();
+    setExecuting(false);
     scrollOutput();
   }
 }
@@ -301,11 +324,11 @@ function runCode() {
 function stopExecution() {
   if (executing.value) {
     try {
-      worker.postMessage({ type: 'stop', code: '' })
+      postWorkerMessage({ type: 'stop', code: '' })
     } catch (err) {
       outputLines.value.push({ text: `❌ ${err.message}`, type: 'error' });
-      execTime.value = Math.round(performance.now() - startTime);
-      executing.value = false;
+      setExecTime();
+      setExecuting(false);
       scrollOutput();
     }
   }
@@ -358,12 +381,6 @@ function changeFontSize(delta) {
   const newSize = fontSize.value + delta;
   if (newSize >= 10 && newSize <= 24) {
     fontSize.value = newSize;
-  }
-}
-
-function handleChangeFontSize(e) {
-  if (e.detail && e.detail.delta) {
-    changeFontSize(e.detail.delta);
   }
 }
 
@@ -424,38 +441,6 @@ function takeScreenshot() {
   showMessage('📷 Capture d\'écran - Utilisez l\'outil de capture de votre système (Win+Shift+S)');
 }
 
-// Raccourcis clavier
-function handleKeydown(e) {
-  // Ctrl/Cmd + Plus/Moins pour la taille de police
-  if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) {
-    e.preventDefault();
-    changeFontSize(1);
-  }
-  if ((e.ctrlKey || e.metaKey) && e.key === '-') {
-    e.preventDefault();
-    changeFontSize(-1);
-  }
-  
-  // F11 pour plein écran
-  if (e.key === 'F11') {
-    e.preventDefault();
-    toggleFullscreen();
-  }
-  
-  // Ctrl/Cmd + P pour mode présentation
-  if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-    e.preventDefault();
-    togglePresentationMode();
-  }
-  
-  // Ctrl/Cmd + S pour sauvegarder
-  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-    e.preventDefault();
-    saveState();
-    showMessage('✅ État sauvegardé');
-  }
-}
-
 function copyPython() {
   if (pythonCode.value) {
     new Promise((resolve, reject) => {
@@ -514,6 +499,37 @@ function copy() {
       "text/plain": new Blob([pythonCode.value], { type: "text/plain" })
     })
   ]);
+}
+
+// Input inline handlers
+function submitInlineInput() {
+  const value = inputValue.value;
+  showInputModal.value = false;
+  inputValue.value = '';
+  addOutput({ text: value + '\n' });
+  if (pendingInputId.value && worker.value) {
+    worker.value.postMessage({ 
+      type: 'input_response', 
+      id: pendingInputId.value, 
+      value: value 
+    });
+    pendingInputId.value = null;
+  }
+}
+
+function cancelInlineInput() {
+  showInputModal.value = false;
+  inputValue.value = '';
+  const emptyValue = '';
+  addOutput({ text: emptyValue + '\n' });
+  if (pendingInputId.value && worker.value) {
+    worker.value.postMessage({ 
+      type: 'input_response', 
+      id: pendingInputId.value, 
+      value: emptyValue 
+    });
+    pendingInputId.value = null;
+  }
 }
 
 // Exposer les méthodes pour App.vue

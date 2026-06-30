@@ -586,3 +586,47 @@ header .dropdown .btn {
 }
 .snackbar.show { display: block; animation: fadeInUp 0.3s ease; }
 @keyframes fadeInUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+/* === INLINE INPUT === */
+.input-line {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    padding: 4px 8px;
+    margin: 4px 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    animation: fadeIn 0.2s ease;
+}
+
+.input-prompt-text {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    white-space: nowrap;
+    font-weight: 500;
+    margin-right: 6px;
+}
+
+.inline-input {
+    flex: 1;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.inline-input:focus {
+    border-color: var(--accent);
+}
+
+.btn-small {
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    height: 28px;
+}

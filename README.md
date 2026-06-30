@@ -10,14 +10,21 @@ L'application fonctionne entièrement côté client (navigation), sans nécessit
 
 ## ✨ Fonctionnalités
 
-- **📝 Éditeur de code** avec coloration syntaxique (CodeMirror)
+- **📝 Éditeur de code** avec coloration syntaxique (CodeMirror 6)
 - **▶️ Exécution d'algorithmes** via un interpréteur intégré (Web Worker)
 - **🐍 Conversion en Python** d'un algorithme vers du code Python fonctionnel
-- **📦 Exemples modulaires** : Fibonacci, PGCD/PPCM, tri par sélection, recherche dichotomique, nombres premiers, etc.
-- **🌙 Thème sombre/clair** (préférence sauvegardée)
+- **📦 12 exemples modulaires** : Fibonacci, PGCD/PPCM, tri par sélection, tri à bulles, recherche dichotomique, statistiques, nombres premiers, manipulation de chaînes, exponentiation rapide, suite arithmétique, jeu de devinette, calculatrice
+- **🌙 Thème sombre/clair** (préférence sauvegardée dans localStorage)
 - **📋 Copie du code Python généré** (avec mise en forme)
 - **⏹ Arrêt** de l'exécution en cours
 - **🗑 Effacement** rapide de l'éditeur et des sorties
+- **🎚️ Vue splitée redimensionnable** entre l'éditeur et la sortie
+- **🔍 Contrôle de la taille de police** (raccourcis Ctrl+Plus/Ctrl+Moins)
+- **📽️ Mode présentation** (Ctrl+P)
+- **⛶ Plein écran** (F11)
+- **📥 Export TXT** des résultats d'exécution
+- **📝 Saisie utilisateur inline** dans la fenêtre de sortie pour `Lire()`
+- **📖 Référence des fonctions usuelles** (page dédiée avec catégories : caractères, nombres, chaînes)
 
 ---
 
@@ -43,6 +50,7 @@ ALGO++ utilise un langage de type pseudo-code français, pédagogique et simple,
 - **Condition** : `Si condition Alors ... Sinon ... Fin Si`
 - **Boucle Tant Que** : `Tant Que condition Faire ... Fin Tant Que`
 - **Boucle Pour** : `Pour i de début à fin [Pas pas] Faire ... Fin Pour`
+- **Boucle Répéter** : `Répéter ... Jusqu'à condition`
 - **Fonctions** : `Fonction nom(params): type ... Fin`
 - **Procédures** : `Procédure nom(params) ... Fin`
 - **Retour** : `Retourner expression`
@@ -50,9 +58,9 @@ ALGO++ utilise un langage de type pseudo-code français, pédagogique et simple,
 ### Opérateurs
 
 - **Arithmétiques** : `+`, `-`, `*`, `/`, `div`, `mod`
-- **Comparaison** : `=`, `!=`, `<`, `>`, `<=`, `>=`
+- **Comparaison** : `=`, `!=`, `≠`, `<`, `>`, `<=`, `≥`, `≤`, `>=`
 - **Logiques** : `et`, `ou`, `non`
-- **Fonctions intégrées** : `Ent()`, `Racine()`, `aléa()`, `long()`, etc.
+- **Fonctions intégrées** : `Ent()`, `Racine()`, `aléa()`, `long()`, `sous_chaine()`, `pos()`, `valeur()`, `convch()`, `majus()`, `chr()`, `ord()`, `abs()`, `sin()`, `cos()`, `tan()`, `arrondi()`
 
 ---
 
@@ -118,7 +126,6 @@ FnUs2/
 ├── index.html              # Point d'entrée HTML
 ├── package.json            # Configuration npm et dépendances
 ├── vite.config.js          # Configuration Vite
-├── fonctions-usuelles.html # Référence interactive des fonctions usuelles
 ├── css/
 │   └── style.css           # Styles de l'application
 ├── js/
@@ -129,12 +136,24 @@ FnUs2/
 │   └── worker.js           # Web Worker pour l'exécution
 ├── src/
 │   ├── main.js             # Point d'entrée Vue 3
-│   ├── App.vue             # Composant principal
+│   ├── App.vue             # Composant principal (header, router)
+│   ├── router.js           # Configuration du routeur Vue
 │   ├── codemirror/
-│   │   └── snippets.js     # Snippets CodeMirror
-│   └── components/
-│       ├── CodeMirrorEditor.vue  # Éditeur de code
-│       └── PythonHighlight.vue   # Mise en évidence Python
+│   │   └── snippets.js     # Snippets CodeMirror pour auto-complétion
+│   ├── components/
+│   │   ├── CodeMirrorEditor.vue  # Éditeur de code CodeMirror 6
+│   │   ├── PythonHighlight.vue   # Mise en évidence syntaxique Python
+│   │   └── InputModal.vue        # Modal de saisie pour Lire()
+│   ├── composables/
+│   │   ├── useStorage.js         # Gestion localStorage/sessionStorage réactive
+│   │   ├── useWorker.js          # Gestion des Web Workers
+│   │   └── useKeyboardShortcuts.js # Raccourcis clavier déclaratifs
+│   ├── data/
+│   │   └── modularExamples.js    # 12 exemples d'algorithmes modulaires
+│   └── views/
+│       └── EditorView.vue        # Vue principale (éditeur, sortie, Python)
+├── fonctions-usuelles/
+│   └── index.html         # Référence interactive des fonctions usuelles
 └── test/
     ├── arrays.test.js      # Tests tableaux
     ├── basics.test.js      # Tests de base
@@ -146,7 +165,8 @@ FnUs2/
     ├── integration.test.js # Tests d'intégration
     ├── integration2.test.js
     ├── output.test.js      # Tests sortie
-    └── procedures.test.js  # Tests procédures/fonctions
+    ├── procedures.test.js  # Tests procédures/fonctions
+    └── robustness.test.js  # Tests robustesse
 ```
 
 ---
@@ -172,10 +192,12 @@ npm test
 | Technologie               | Rôle                              |
 |---------------------------|-----------------------------------|
 | [Vue 3](https://vuejs.org/) (Composition API) | Framework frontend |
+| [Vue Router](https://router.vuejs.org/) | Routage entre pages |
 | [Vite](https://vitejs.dev/) | Bundler et serveur de développement |
 | [CodeMirror 6](https://codemirror.net/) | Éditeur de code |
 | [Prism.js](https://prismjs.com/) | Coloration syntaxique Python |
 | [Vitest](https://vitest.dev/) | Framework de test |
+| [Composables](https://vuejs.org/guide/reusability/composables.html) | Logique métier réutilisable |
 | Web Workers                | Exécution isolée des algorithmes |
 
 ---
@@ -184,8 +206,8 @@ npm test
 
 | Page | Description |
 |------|-------------|
-| [`index.html`](index.html) | Interpréteur et convertisseur ALGO++ (application principale) |
-| [`fonctions-usuelles.html`](fonctions-usuelles.html) | Référence interactive des fonctions usuelles (caractères, nombres, chaînes) |
+| [`/`](index.html) | Interpréteur et convertisseur ALGO++ (application principale) |
+| [`/fonctions`](fonctions-usuelles/index.html) | Référence interactive des fonctions usuelles (caractères, nombres, chaînes) |
 
 ---
 
