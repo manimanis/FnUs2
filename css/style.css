@@ -26,6 +26,61 @@
     --operator: #89ddff;
     --function: #82aaff;
     --variable: #f07178;
+    --snackbar-bg: var(--bg-tertiary);
+    --header-btn-color: #fff;
+
+    --bg: #1e1e2e;
+    --bg-sidebar: #16162a;
+    --bg-card: #27273a;
+    --bg-hover: #2d2d45;
+    --bg-code: #1a1a2e;
+    --text: #e0e0e0;
+    --text-dim: #7a7a9a;
+    --text-muted: #5a5a7a;
+    --accent: #7c4dff;
+    --accent2: #9f7aea;
+    --accent3: #68d391;
+    --accent4: #f6ad55;
+    --accent5: #fc8181;
+    --accent-hover: #9c7cff;
+    --border: #3d3d5c;
+    --keyword: #bb86fc;
+    --string: #c3e88d;
+    --number: #f78c6c;
+    --function: #82aaff;
+    --comment: #6d6d8a;
+    --type: #4fc3f7;
+    --cat-chars: #4fc3f7;
+    --cat-nums: #ffb74d;
+    --cat-strings: #81c784;
+    --badge-chars-bg: rgba(79, 195, 247, 0.15);
+    --badge-nums-bg: rgba(255, 183, 77, 0.15);
+    --badge-strings-bg: rgba(129, 199, 132, 0.15);
+}
+
+.light-mode {
+    --bg-primary: #f5f5f8;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #e8e8ee;
+    --text-primary: #2d2d3a;
+    --text-secondary: #6b6b80;
+    --accent: #6200ee;
+    --accent-hover: #7c3aed;
+    --success: #2e7d32;
+    --error: #c62828;
+    --warning: #e65100;
+    --code-bg: #ffffff;
+    --border: #d0d0da;
+    --keyword: #7b1fa2;
+    --type: #00695c;
+    --string: #2e7d32;
+    --number: #e65100;
+    --comment: #9e9e9e;
+    --operator: #00695c;
+    --function: #1565c0;
+    --variable: #c62828;
+    --snackbar-bg: #ffffff;
+    --header-btn-color: #fff;
 }
 
 body {
@@ -163,7 +218,7 @@ header .subtitle {
 
 .output-content {
     padding: 12px 16px;
-    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace;
     font-size: 13px;
     line-height: 1.5;
     overflow: auto;

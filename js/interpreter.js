@@ -190,7 +190,9 @@ class Interpreter {
           if (typeof v === 'boolean') parts.push(v ? 'Vrai' : 'Faux');
           else parts.push(v === null || v === undefined ? '' : String(v));
         }
-        this.addOutput(parts.join(' '));
+        const separator = (typeof stmt.sep === 'string') ? stmt.sep : ' ';
+        const ending = stmt.fin !== null && stmt.fin !== undefined ? stmt.fin : '\n';
+        this.addOutput(parts.join(separator) + ending);
         break;
       }
       case 'Read':

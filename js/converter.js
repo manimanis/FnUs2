@@ -116,7 +116,11 @@ class PythonConverter {
         break;
       case 'Write': {
         const parts = stmt.args.map(a => this.convertExpression(a));
-        this.code += this.indent() + `print(${parts.join(', ')})\n`;
+        const pyArgs = [];
+        if (parts.length > 0) pyArgs.push(parts.join(', '));
+        if (stmt.sep !== null && stmt.sep !== undefined) pyArgs.push(`sep="${stmt.sep}"`);
+        if (stmt.fin !== null && stmt.fin !== undefined) pyArgs.push(`end="${stmt.fin}"`);
+        this.code += this.indent() + `print(${pyArgs.join(', ')})\n`;
         break;
       }
       case 'Read':
@@ -231,7 +235,7 @@ class PythonConverter {
         const opMap = {
           '+': '+', '-': '-', '*': '*', '/': '/',
           'div': '//', 'mod': '%',
-          '=': '==', '<': '<', '>': '>', '<=': '<=', '>=': '>=', '≠': '!=',
+          '=': '==', '<': '<', '>': '>', '<=': '<=', '>=': '>=', '≠': '!=', '≥': '>=', '≤': '<=',
           'Et': 'and', 'Ou': 'or', '∈': 'in'
         };
         return `${left} ${opMap[expr.op] || expr.op} ${right}`;
@@ -251,25 +255,25 @@ class PythonConverter {
 
       case 'Call': {
         const args = expr.args.map(a => this.convertExpression(a)).join(', ');
-        const name = expr.name;
-        if (name === 'Racine') { this.imports.add('math'); return `sqrt(${args})`; }
-        if (name === 'Aléa') { this.imports.add('random'); return `randint(${args})`; }
-        if (name === 'Sous_chaine') {
+        const name = expr.name.toLowerCase();
+        if (name === 'racine') { this.imports.add('math'); return `sqrt(${args})`; }
+        if (name === 'aléa') { this.imports.add('random'); return `randint(${args})`; }
+        if (name === 'sous_chaine') {
           const [s, d, f] = expr.args.map(a => this.convertExpression(a));
           return `(${s}[${d}-1:${f}])`;
         }
-        if (name === 'Effacer') {
+        if (name === 'effacer') {
           const [s, d, f] = expr.args.map(a => this.convertExpression(a));
           return `(${s}[:${d}-1]+${s}[${f}:])`;
         }
-        if (name === 'Pos') {
+        if (name === 'pos') {
           const [s1, s2] = expr.args.map(a => this.convertExpression(a));
           return `(${s2}.find(${s1})+1)`;
         }
-        if (name === 'ConvCh') return `str(${args})`;
+        if (name === 'convch') return `str(${args})`;
         if (name === 'valeur') return `float(${args})`;
-        if (name === 'Ent') return `int(${args})`;
-        if (name === 'Long') return `len(${args})`;
+        if (name === 'ent') return `int(${args})`;
+        if (name === 'long') return `len(${args})`;
         if (name === 'chr') return `chr(${args})`;
         if (name === 'ord') return `ord(${args})`;
         return `${name}(${args})`;

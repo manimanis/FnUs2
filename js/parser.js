@@ -410,10 +410,53 @@ class Parser {
     parseWrite() {
         this.expect('KEYWORD', 'Ecrire');
         this.expect('DELIMITER', '(');
-        const args = [this.parseExpression()];
-        while (this.match('DELIMITER', ',')) args.push(this.parseExpression());
+        const args = [];
+        let sep = null;
+        let fin = null;
+
+        // Helper: check if current position is a keyword argument
+        // Note: 'fin' is a keyword token ('fin'), 'sep' is an identifier token
+        const isKeywordArg = () => {
+            const tok = this.peek();
+            const name = tok.value.toLowerCase();
+            return (name === 'sep' || name === 'fin') &&
+                this.pos + 1 < this.tokens.length && this.tokens[this.pos + 1].value === '=';
+        };
+
+        // Parse regular arguments first
+        if (this.peek().value !== ')' && !isKeywordArg()) {
+            args.push(this.parseExpression());
+            while (this.peek().type === 'DELIMITER' && this.peek().value === ',') {
+                this.next(); // consume ','
+                if (isKeywordArg()) break;
+                args.push(this.parseExpression());
+            }
+        }
+
+        // Parse keyword arguments: sep="..." and fin="..."
+        while (isKeywordArg()) {
+            const kwToken = this.next();
+            const kwName = kwToken.value.toLowerCase();
+            this.expect('OPERATOR', '=');
+            const valueExpr = this.parseExpression();
+            if (valueExpr.type !== 'String') {
+                this.error(`La valeur de '${kwName}' doit être une chaîne de caractères`);
+            }
+            if (kwName === 'sep') {
+                if (sep !== null) this.error("'sep' ne peut être spécifié qu'une fois");
+                sep = valueExpr.value;
+            } else {
+                if (fin !== null) this.error("'fin' ne peut être spécifié qu'une fois");
+                fin = valueExpr.value;
+            }
+            // If there's a comma, consume it for the next keyword arg
+            if (this.peek().type === 'DELIMITER' && this.peek().value === ',') {
+                this.next();
+            }
+        }
+
         this.expect('DELIMITER', ')');
-        return { type: 'Write', args };
+        return { type: 'Write', args, sep, fin };
     }
 
     parseRead() {

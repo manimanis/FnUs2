@@ -1,11 +1,15 @@
 <template>
   <div id="app">
-    <header>
+    <!-- Header visible on all pages, adapts per view -->
+    <header v-if="$route.name === 'editor'">
       <h1>🔷 ALGO++</h1>
       <span class="subtitle">Interpréteur & Convertisseur d'algorithmes pédagogiques</span>
       <button class="btn btn-primary" @click="runCode" title="Exécuter (Ctrl+Enter)">▶ Exécuter</button>
       <button class="btn btn-warning" @click="stopExecution" title="Arrêter">⏹ Arrêter</button>
       <button class="btn btn-success" @click="convertCode" title="Convertir en Python">🐍 Convertir</button>
+      <button class="btn btn-info" @click="toggleTheme" :title="darkMode ? 'Mode clair' : 'Mode sombre'">
+        {{ darkMode ? '☀️' : '🌙' }}
+      </button>
       <div class="dropdown">
         <button class="btn btn-info dropdown-toggle" @click="showModularMenu = !showModularMenu"
           title="Charger un exemple modulaire">📦 Modulaire ▾</button>
@@ -18,95 +22,45 @@
           </div>
         </div>
       </div>
+      <router-link to="/fonctions" class="nav-link" title="Référence des fonctions usuelles">📖 Fonctions</router-link>
       <button class="btn btn-danger" @click="clearAll" title="Tout effacer">🗑 Effacer</button>
     </header>
 
-    <div class="main-container">
-      <div class="editor-panel">
-        <div class="panel-header">
-          <span>📝 Éditeur d'algorithme</span>
-          <span style="font-size:0.7rem;color:var(--comment);">Ctrl+Enter: Exécuter</span>
-        </div>
-        <div class="editor-wrapper">
-          <CodeMirrorEditor v-model="code" placeholder="Écrivez votre algorithme ici..." />
-        </div>
-      </div>
+    <!-- Header for the fonctions page -->
+    <header v-else>
+      <h1>🔷 ALGO++</h1>
+      <span class="subtitle">Fonctions usuelles — Référence interactive</span>
+      <router-link to="/" class="nav-link" title="Retour à l'éditeur">← Éditeur</router-link>
+      <button class="btn btn-info" @click="toggleTheme" :title="darkMode ? 'Mode clair' : 'Mode sombre'">
+        {{ darkMode ? '☀️' : '🌙' }}
+      </button>
+    </header>
 
-      <div class="output-panel">
-        <div class="output-section" v-if="activeTab === 'output'">
-          <div class="panel-header">
-            <span>🖥 Sortie d'exécution</span>
-            <span v-if="executing" style="color:var(--warning)">⏳ Exécution...</span>
-            <span v-if="execTime" style="font-size:0.7rem;color:var(--comment)">{{ execTime }}ms</span>
-          </div>
-          <div class="output-content" ref="outputContainer">
-            <div v-for="(line, i) in outputLines" :key="i"
-              :class="['output-line', line.type ? line.type + '-line' : '']">
-              {{ line.text }}
-            </div>
-            <div v-if="outputLines.length === 0 && !executing" style="color:var(--comment);font-style:italic;">
-              ▶ Exécuter pour voir les résultats...
-            </div>
-          </div>
-        </div>
-
-        <div class="output-section" v-if="activeTab === 'python'">
-          <div class="panel-header">
-            <span>🐍 Code Python généré</span>
-            <button class="btn btn-outline" @click="copyPython" style="font-size:0.7rem;padding:4px 10px;">📋
-              Copier</button>
-          </div>
-          <div class="output-content">
-            <PythonHighlight v-if="pythonCode" ref="pythonElement" :code="pythonCode" />
-            <div v-else style="color:var(--comment);font-style:italic;">🐍 Convertir pour générer le code Python...
-            </div>
-          </div>
-        </div>
-
-        <div class="tabs">
-          <div class="tab" :class="{ active: activeTab === 'output' }" @click="activeTab = 'output'">🖥 Sortie</div>
-          <div class="tab" :class="{ active: activeTab === 'python' }" @click="activeTab = 'python'">🐍 Python</div>
-        </div>
-      </div>
-    </div>
+    <router-view
+      :darkMode="darkMode"
+      @message="showMessage"
+    />
 
     <div class="snackbar" :class="{ show: showSnackbar }">{{ snackbarMessage }}</div>
   </div>
 </template>
 
 <script setup>
-import { ref, nextTick, watch, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { useRouter } from 'vue-router';
 import { Lexer } from '../js/lexer.js';
 import { Parser } from '../js/parser.js';
 import { PythonConverter } from '../js/converter.js';
-import CodeMirrorEditor from './components/CodeMirrorEditor.vue';
-import PythonHighlight from './components/PythonHighlight.vue';
 
-const activeTab = ref('output');
-const outputLines = ref([]);
-const pythonCode = ref('');
-const pythonElement = ref(null);
-const executing = ref(false);
-const execTime = ref(null);
+const router = useRouter();
+
 const showSnackbar = ref(false);
 const snackbarMessage = ref('');
-const outputContainer = ref(null);
 let snackbarTimer = null;
-let worker = null;
 
-const code = ref(`Var n, s: entier
-
-Début
-  s ← 0
-  n ← 1
-  Tant Que n <= 10 Faire
-    s ← s + n
-    n ← n + 1
-  Fin Tant Que
-  Ecrire("La somme est:", s)
-Fin`);
-
+const darkMode = ref(true);
 const showModularMenu = ref(false);
+const THEME_STORAGE_KEY = 'algo-plus-plus-theme';
 
 const modularTitles = [
   'Fibonacci (récursif)',
@@ -124,7 +78,6 @@ const modularIcons = [
 ];
 
 const modularExamples = [
-  // 1. Fibonacci récursif
   `Fonction fib(n: entier): entier
 Début
   Si n <= 1 Alors
@@ -141,7 +94,6 @@ Début
     Ecrire("fib(", i, ") =", fib(i))
   Fin Pour
 Fin`,
-  // 2. PGCD par algorithme d'Euclide
   `Fonction pgcd(a, b: entier): entier
 Var r: entier
 Début
@@ -164,8 +116,28 @@ Début
   Ecrire("PGCD(", x, ",", y, ") =", pgcd(x, y))
   Ecrire("PPCM(", x, ",", y, ") =", ppcm(x, y))
 Fin`,
-  // 3. Procédure de tri par sélection
   `Type tab = tableau de 10 entier
+
+Procédure Remplir(@t: tab, n: entier)
+Var i : entier
+Début
+  Pour i de 0 à n-1 Faire
+    t[i] ← aléa(10, 99)
+  Fin Pour
+Fin
+
+Procédure Afficher(t: tab, n: entier)
+Var i : entier
+Début
+  Pour i de 0 à n-1 Faire
+    Ecrire(t[i])
+  Fin Pour
+Fin
+
+Procédure Permuter(@a: entier, @b: entier)
+Début
+  tmp ← a ; a ← b ; b ← tmp
+Fin
 
 Procédure trierTableau(t: tab; n: entier)
 Var i, j, min, temp: entier
@@ -177,29 +149,19 @@ Début
         min ← j
       Fin Si
     Fin Pour
-    temp ← t[i]
-    t[i] ← t[min]
-    t[min] ← temp
+    Permuter(t[i], t[min])
   Fin Pour
 Fin
 
 Var arr: tab; i: entier
 Début
-  arr[0] ← 7; arr[1] ← 3; arr[2] ← 9
-  arr[3] ← 1; arr[4] ← 6; arr[5] ← 4
-  arr[6] ← 8; arr[7] ← 2; arr[8] ← 5
-  arr[9] ← 0
+  Remplir(arr, 10)
   Ecrire("Avant tri:")
-  Pour i de 0 à 9 Faire
-    Ecrire(arr[i])
-  Fin Pour
+  Afficher(arr, 10)
   trierTableau(arr, 10)
   Ecrire("Après tri:")
-  Pour i de 0 à 9 Faire
-    Ecrire(arr[i])
-  Fin Pour
+  Afficher(arr, 10)
 Fin`,
-  // 4. Recherche dichotomique
   `Type tab = tableau de 10 entier
 
 Fonction rechercher(t: tab, val: entier): entier
@@ -235,7 +197,6 @@ Début
     Ecrire("Valeur 15 non trouvée")
   Fin Si
 Fin`,
-  // 5. Statistiques sur tableau (fonctions multiples)
   `Type tab = tableau de 10 entier
 
 Fonction sommeTab(t: tab): entier
@@ -285,7 +246,6 @@ Début
   Ecrire("Min:", minTab(tab))
   Ecrire("Max:", maxTab(tab))
 Fin`,
-  // 6. Vérification nombre premier et décomposition
   `Fonction estPremier(n: entier): booleen
 Var i, mx: entier
     test: booleen
@@ -329,7 +289,6 @@ Début
   Fin Si
   afficherPremiers(150)
 Fin`,
-  // 7. Manipulation de chaînes avec fonctions
   `Fonction compterVoyelles(ch: chaine): entier
 Var i, cpt: entier; car: caractere
 Début
@@ -364,7 +323,6 @@ Début
   Ecrire("Nombre de voyelles:", compterVoyelles(texte))
   Ecrire("Inversé:", inverserChaine(texte))
 Fin`,
-  // 8. Exponentiation rapide (récursive)
   `Fonction puissance(base, exp: entier): entier
 Début
   Si exp = 0 Alors
@@ -394,49 +352,53 @@ Début
 Fin`
 ];
 
-const STORAGE_KEY = 'algo-plus-plus-state';
+// Ref for the editor view instance to call methods
+const editorRef = ref(null);
 
-function saveState() {
-  const state = {
-    code: code.value,
-    outputLines: outputLines.value,
-    pythonCode: pythonCode.value,
-    activeTab: activeTab.value,
-    execTime: execTime.value
-  };
-  try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch (e) {
-    // Stockage indisponible ou plein
+function runCode() {
+  // The editor view will receive this via router-view ref
+  const el = document.querySelector('.main-container');
+  if (el) {
+    const event = new CustomEvent('editor-run');
+    window.dispatchEvent(event);
   }
 }
 
-function loadState() {
-  try {
-    const saved = sessionStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const state = JSON.parse(saved);
-      if (state.code !== undefined) code.value = state.code;
-      if (state.outputLines !== undefined) outputLines.value = state.outputLines;
-      if (state.pythonCode !== undefined) pythonCode.value = state.pythonCode;
-      if (state.activeTab !== undefined) activeTab.value = state.activeTab;
-      if (state.execTime !== undefined) execTime.value = state.execTime;
-    }
-  } catch (e) {
-    // État corrompu, on ignore
-  }
+function stopExecution() {
+  window.dispatchEvent(new CustomEvent('editor-stop'));
 }
 
-watch([code, outputLines, pythonCode, activeTab, execTime], () => {
-  saveState();
-});
+function convertCode() {
+  window.dispatchEvent(new CustomEvent('editor-convert'));
+}
+
+function clearAll() {
+  window.dispatchEvent(new CustomEvent('editor-clear'));
+}
+
+function showMessage(msg) {
+  snackbarMessage.value = msg;
+  showSnackbar.value = true;
+  if (snackbarTimer) clearTimeout(snackbarTimer);
+  snackbarTimer = setTimeout(() => { showSnackbar.value = false; }, 2500);
+}
+
+const modularExampleIndex = ref(0);
 
 function selectModularExample(index) {
-  code.value = modularExamples[index];
-  outputLines.value.splice(0);
-  pythonCode.value = '';
+  modularExampleIndex.value = index;
+  // Write the code through the event system
+  window.dispatchEvent(new CustomEvent('editor-set-code', { detail: { code: modularExamples[index] } }));
   showModularMenu.value = false;
   showMessage(`📦 ${modularTitles[index]} chargé !`);
+}
+
+function toggleTheme() {
+  darkMode.value = !darkMode.value;
+  document.documentElement.classList.toggle('light-mode', !darkMode.value);
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, darkMode.value ? 'dark' : 'light');
+  } catch (e) { /* ignore */ }
 }
 
 function handleClickOutside(e) {
@@ -446,204 +408,49 @@ function handleClickOutside(e) {
 }
 
 onMounted(() => {
-  loadState();
-  worker = new Worker(new URL('../js/worker.js', import.meta.url), { type: 'module' });
-
-  worker.onmessage = (e) => {
-    const data = e.data;
-    if (data.type === 'output') {
-      if (typeof data.text === 'object' && data.text.type === 'error') {
-        outputLines.value.push({ text: data.text.text, type: 'error' });
-      } else {
-        outputLines.value.push({ text: String(data.text) });
-      }
-      scrollOutput();
-    } else if (data.type === 'input_request') {
-      const val = window.prompt(data.prompt);
-      outputLines.value.push({ text: val });
-      scrollOutput();
-      worker.postMessage({ type: 'input_response', id: data.id, value: val });
-    } else if (data.type === 'done') {
-      if (outputLines.value.length === 0) {
-        outputLines.value.push({ text: '✅ Programme exécuté avec succès.', type: 'success' });
-      } else {
-        outputLines.value.push({ text: `✅ Terminé (${data.execTime}ms)`, type: 'success' });
-      }
-      execTime.value = data.execTime;
-      executing.value = false;
-      scrollOutput();
-    } else if (data.type === 'stopped') {
-      outputLines.value.push({ text: '⛔ Exécution arrêtée par l\'utilisateur.', type: 'warning' });
-      execTime.value = Math.round(performance.now() - startTime);
-      executing.value = false;
-      scrollOutput();
-    } else if (data.type === 'error') {
-      outputLines.value.push({ text: `❌ ${data.text}`, type: 'error' });
-      execTime.value = Math.round(performance.now() - startTime);
-      executing.value = false;
-      scrollOutput();
+  try {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    if (savedTheme === 'light') {
+      darkMode.value = false;
+      document.documentElement.classList.add('light-mode');
     }
-  };
+  } catch (e) { /* ignore */ }
 
   document.addEventListener('click', handleClickOutside);
 });
 
 onUnmounted(() => {
-  if (worker) worker.terminate();
   document.removeEventListener('click', handleClickOutside);
 });
-
-function showMessage(msg) {
-  snackbarMessage.value = msg;
-  showSnackbar.value = true;
-  if (snackbarTimer) clearTimeout(snackbarTimer);
-  snackbarTimer = setTimeout(() => { showSnackbar.value = false; }, 2500);
-}
-
-function scrollOutput() {
-  nextTick(() => {
-    if (outputContainer.value) {
-      outputContainer.value.scrollTop = outputContainer.value.scrollHeight;
-    }
-  });
-}
-
-let startTime = 0;
-
-function runCode() {
-  outputLines.value.splice(0);
-  pythonCode.value = '';
-  activeTab.value = 'output';
-  executing.value = true;
-  execTime.value = null;
-  startTime = performance.now();
-
-  try {
-    worker.postMessage({ type: 'run', code: code.value });
-  } catch (err) {
-    outputLines.value.push({ text: `❌ ${err.message}`, type: 'error' });
-    execTime.value = Math.round(performance.now() - startTime);
-    executing.value = false;
-    scrollOutput();
-  }
-}
-
-function stopExecution() {
-  if (executing.value) {
-    try {
-      worker.postMessage({ type: 'stop', code: '' })
-    } catch (err) {
-      outputLines.value.push({ text: `❌ ${err.message}`, type: 'error' });
-      execTime.value = Math.round(performance.now() - startTime);
-      executing.value = false;
-      scrollOutput();
-    }
-  }
-}
-
-function convertCode() {
-  pythonCode.value = '';
-  activeTab.value = 'python';
-  try {
-    const lexer = new Lexer(code.value);
-    const tokens = lexer.tokenize();
-    const parser = new Parser(tokens);
-    const ast = parser.parse();
-    const converter = new PythonConverter();
-    pythonCode.value = converter.convert(ast);
-    showMessage('✅ Conversion Python réussie !');
-  } catch (err) {
-    pythonCode.value = `# ERREUR: ${err.message}`;
-    showMessage('❌ Erreur de conversion');
-  }
-}
-
-function copyPython() {
-  if (pythonCode.value) {
-    new Promise(
-      (resolve, reject) => {
-        try {
-          copy();
-          resolve();
-        } catch (e) {
-          reject(e);
-        }
-      }
-    )
-      .then(() => {
-        showMessage('✅ Copié !');
-      })
-      .catch((e) => showMessage('❌ Copie échouée' + e));
-  }
-}
-
-function clearAll() {
-  code.value = '';
-  outputLines.value.splice(0);
-  pythonCode.value = '';
-  activeTab.value = 'output';
-  sessionStorage.removeItem(STORAGE_KEY);
-  showMessage('🗑 Tout effacé');
-}
-
-function cloneWithInlineStyles(element) {
-  // Cloner le noeud
-  const clone = element.cloneNode(true);
-
-  // Fonction pour copier les styles calculés
-  function applyInlineStyles(source, target) {
-    const computedStyle = window.getComputedStyle(source);
-
-    // Liste des propriétés liées aux couleurs
-    const colorProperties = [
-      "color",
-      "background-color",
-      "border-color",
-      "border-top-color",
-      "border-right-color",
-      "border-bottom-color",
-      "border-left-color",
-      "outline-color",
-      "text-decoration-color",
-      "box-shadow"
-    ];
-
-    // Appliquer uniquement les styles de couleur
-    colorProperties.forEach(prop => {
-      const value = computedStyle.getPropertyValue(prop);
-      if (value && value !== "rgba(0, 0, 0, 0)") {
-        target.style.setProperty(prop, value);
-      }
-    });
-
-    // Supprimer toutes les classes
-    target.removeAttribute("class");
-  }
-
-  // Parcourir tous les éléments (original + clone)
-  const sourceElements = [element, ...element.querySelectorAll("*")];
-  const targetElements = [clone, ...clone.querySelectorAll("*")];
-
-  sourceElements.forEach((srcEl, index) => {
-    const targetEl = targetElements[index];
-    applyInlineStyles(srcEl, targetEl);
-  });
-
-  return clone;
-}
-
-function copy() {
-  const el = cloneWithInlineStyles(pythonElement.value?.preElement);
-
-  el.innerHTML = "<p>" + el.innerHTML
-    .replaceAll('\n', '</p><p>')
-    .replaceAll('    ', '&nbsp;&nbsp;&nbsp;&nbsp;')
-    + "</p>";
-  navigator.clipboard.write([
-    new ClipboardItem({
-      "text/html": new Blob([el.innerHTML], { type: "text/html" }),
-      "text/plain": new Blob([el.innerText], { type: "text/plain" })
-    })
-  ]);
-}
 </script>
+
+<style>
+/* Nav link style for router-link */
+.nav-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  transition: all 0.2s;
+  white-space: nowrap;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav-link:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(124, 77, 255, 0.1);
+}
+.router-link-active.nav-link {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(124, 77, 255, 0.15);
+}
+</style>
