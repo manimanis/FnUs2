@@ -4,7 +4,7 @@
  */
 
 class Interpreter {
-  constructor() {
+  constructor(options = {}) {
     this.globalEnv = {};
     this.functions = {};
     this.procedures = {};
@@ -16,10 +16,43 @@ class Interpreter {
     this.outputCallback = null;
     this._returnValue = { set: false, value: null };
     this._stopped = false;
+    this.maxIterations = options.maxIterations || 1000000;
+    this.executionTimeout = options.executionTimeout || 50000;
+    this.iterationCount = 0;
+    this.startTime = null;
+    this.yieldInterval = options.yieldInterval || 100;
+    this._yieldCounter = 0;
   }
 
   stop() {
     this._stopped = true;
+  }
+
+  _maybeYield() {
+    this._yieldCounter++;
+    if (this._yieldCounter >= this.yieldInterval) {
+      this._yieldCounter = 0;
+      return Promise.resolve();
+    }
+    return null;
+  }
+
+  _checkIterationLimit() {
+    this.iterationCount++;
+    if (this.iterationCount > this.maxIterations) {
+      throw new Error('Limite d\'itérations atteinte');
+    }
+  }
+
+  _checkTimeout() {
+    if (this.startTime && (Date.now() - this.startTime > this.executionTimeout)) {
+      throw new Error('Timeout');
+    }
+  }
+
+  _formatError(message, stmt) {
+    const line = stmt && stmt.line ? ` (ligne ${stmt.line})` : '';
+    return `${message}${line}`;
   }
 
   setOutputCallback(cb) { this.outputCallback = cb; }
@@ -66,6 +99,8 @@ class Interpreter {
     this.typeDefs = {};
     this._returnValue = { set: false, value: null };
     this._stopped = false;
+    this.iterationCount = 0;
+    this.startTime = Date.now();
 
     let mainBody = null;
 
@@ -106,7 +141,9 @@ class Interpreter {
 
   async executeProcedure(name, argExprs, callerEnv = this.globalEnv) {
     const proc = this.procedures[name.toLowerCase()];
-    if (!proc) throw new Error(`Procédure '${name}' non définie`);
+    if (!proc) {
+      throw new Error(`Procédure '${name}' non définie`);
+    }
     const localEnv = Object.create(callerEnv);
     for (let i = 0; i < proc.params.length; i++) {
       const p = proc.params[i];
@@ -143,7 +180,9 @@ class Interpreter {
 
   async executeFunction(name, argExprs, callerEnv = this.globalEnv) {
     const func = this.functions[name.toLowerCase()];
-    if (!func) throw new Error(`Fonction '${name}' non définie`);
+    if (!func) {
+      throw new Error(`Fonction '${name}' non définie`);
+    }
     const localEnv = Object.create(callerEnv);
     for (let i = 0; i < func.params.length; i++) {
       const p = func.params[i];
@@ -179,7 +218,10 @@ class Interpreter {
       case 'ArrayAssign': {
         const arr = env[stmt.target];
         const idx = await this.evaluateExpression(stmt.index, env);
-        if (!Array.isArray(arr)) throw new Error(`${stmt.target} n'est pas un tableau`);
+        if (!Array.isArray(arr)) throw new Error(this._formatError(`${stmt.target} n'est pas un tableau`, stmt));
+        if (idx < 0 || idx >= arr.length) {
+          throw new Error(this._formatError(`Indice ${idx} hors bornes`, stmt));
+        }
         arr[idx] = await this.evaluateExpression(stmt.value, env);
         break;
       }
@@ -208,7 +250,7 @@ class Interpreter {
             env[target.name] = this.convertInput(inputStr, env[target.name]);
           } else if (target.type === 'ArrayAccess') {
             const arr = env[target.name];
-            if (!Array.isArray(arr)) throw new Error(`${target.name} n'est pas un tableau`);
+            if (!Array.isArray(arr)) throw new Error(this._formatError(`${target.name} n'est pas un tableau`, target));
             const idx = await this.evaluateExpression(target.index, env);
             arr[idx] = this.convertInput(inputStr, arr[idx]);
           }
@@ -240,7 +282,7 @@ class Interpreter {
     } else if (this.functions[nameLower]) {
       await this.executeFunction(nameLower, args, env);
     } else {
-      await this.evaluateCall(stmt, env);
+      throw new Error(this._formatError(`Procédure/Fonction '${stmt.name}' non définie`, stmt));
     }
   }
 
@@ -264,23 +306,40 @@ class Interpreter {
     const start = await this.evaluateExpression(stmt.start, env);
     const end = await this.evaluateExpression(stmt.end, env);
     const step = stmt.step ? await this.evaluateExpression(stmt.step, env) : 1;
+
+    if (typeof start !== 'number' || typeof end !== 'number') {
+      throw new Error('Les bornes de la boucle Pour doivent être des nombres');
+    }
+    if (typeof step !== 'number' || isNaN(step)) {
+      throw new Error('Les bornes de la boucle Pour doivent être des nombres');
+    }
+    if (step === 0) {
+      throw new Error('Le pas de la boucle Pour ne peut pas être nul');
+    }
+
     if (step > 0) {
       for (let i = start; i <= end; i += step) {
+        this._checkIterationLimit();
+        this._checkTimeout();
         if (this._stopped) throw new Error('__STOPPED__');
         env[stmt.varName] = i;
         await this.executeBlock(stmt.body, env);
         if (this._returnValue && this._returnValue.set) return;
         if (this._stopped) throw new Error('__STOPPED__');
-        await new Promise(resolve => setTimeout(resolve, 0));
+        const yieldPromise = this._maybeYield();
+        if (yieldPromise) await yieldPromise;
       }
     } else {
       for (let i = start; i >= end; i += step) {
+        this._checkIterationLimit();
+        this._checkTimeout();
         if (this._stopped) throw new Error('__STOPPED__');
         env[stmt.varName] = i;
         await this.executeBlock(stmt.body, env);
         if (this._returnValue && this._returnValue.set) return;
         if (this._stopped) throw new Error('__STOPPED__');
-        await new Promise(resolve => setTimeout(resolve, 0));
+        const yieldPromise = this._maybeYield();
+        if (yieldPromise) await yieldPromise;
       }
     }
   }
@@ -288,22 +347,28 @@ class Interpreter {
   async executeWhile(stmt, env) {
     if (this._stopped) throw new Error('__STOPPED__');
     while (await this.evaluateExpression(stmt.condition, env)) {
+      this._checkIterationLimit();
+      this._checkTimeout();
       if (this._stopped) throw new Error('__STOPPED__');
       await this.executeBlock(stmt.body, env);
       if (this._returnValue && this._returnValue.set) return;
       if (this._stopped) throw new Error('__STOPPED__');
-      await new Promise(resolve => setTimeout(resolve, 0));
+      const yieldPromise = this._maybeYield();
+      if (yieldPromise) await yieldPromise;
     }
   }
 
   async executeRepeat(stmt, env) {
     if (this._stopped) throw new Error('__STOPPED__');
     do {
+      this._checkIterationLimit();
+      this._checkTimeout();
       if (this._stopped) throw new Error('__STOPPED__');
       await this.executeBlock(stmt.body, env);
       if (this._returnValue && this._returnValue.set) return;
       if (this._stopped) throw new Error('__STOPPED__');
-      await new Promise(resolve => setTimeout(resolve, 0));
+      const yieldPromise = this._maybeYield();
+      if (yieldPromise) await yieldPromise;
     } while (!(await this.evaluateExpression(stmt.condition, env)));
   }
 
@@ -315,14 +380,17 @@ class Interpreter {
       case 'Bool': return expr.value;
       case 'Variable':
         if (expr.name in env) return env[expr.name];
-        throw new Error(`Variable '${expr.name}' non définie`);
+        throw new Error(this._formatError(`Variable '${expr.name}' non définie`, expr));
       case 'ArrayAccess': {
         const arr = env[expr.name];
         const idx = await this.evaluateExpression(expr.index, env);
         if (Array.isArray(arr) || typeof arr === 'string') {
+          if (idx < 0 || idx >= arr.length) {
+            throw new Error(this._formatError(`Indice ${idx} hors bornes`, expr));
+          }
           return arr[idx];
         }
-        throw new Error(`${expr.name} n'est pas un tableau ni une chaîne`);
+        throw new Error(this._formatError(`${expr.name} n'est pas un tableau ni une chaîne`, expr));
       }
       case 'BinaryOp': return this.evaluateBinaryOp(expr, env);
       case 'UnaryOp': return this.evaluateUnaryOp(expr, env);
@@ -343,10 +411,16 @@ class Interpreter {
       case '+': return left + right;
       case '-': return left - right;
       case '*': return left * right;
-      case '/': return left / right;
-      case 'div': return Math.floor(left / right);
+      case '/':
+        if (right === 0) throw new Error(this._formatError('Division par zéro', expr));
+        return left / right;
+      case 'div':
+        if (right === 0) throw new Error(this._formatError('Division entière par zéro', expr));
+        return Math.floor(left / right);
       case 'mod':
-      case '%': return left % right;
+      case '%':
+        if (right === 0) throw new Error(this._formatError('Modulo par zéro', expr));
+        return left % right;
       case '=': return left === right;
       case '<': return left < right;
       case '>': return left > right;
@@ -360,8 +434,8 @@ class Interpreter {
       case 'Ou': return left || right;
       case '∈':
         if (Array.isArray(right)) return right.includes(left);
-        throw new Error("Opérande droit de '∈' doit être un ensemble");
-      default: throw new Error(`Opérateur inconnu: ${expr.op}`);
+        throw new Error(this._formatError("Opérande droit de '∈' doit être un ensemble", expr));
+      default: throw new Error(this._formatError(`Opérateur inconnu: ${expr.op}`, expr));
     }
   }
 
@@ -370,7 +444,7 @@ class Interpreter {
     switch (expr.op) {
       case '-': return -operand;
       case 'Non': return !operand;
-      default: throw new Error(`Opérateur unaire inconnu: ${expr.op}`);
+      default: throw new Error(this._formatError(`Opérateur unaire inconnu: ${expr.op}`, expr));
     }
   }
 
@@ -418,7 +492,7 @@ class Interpreter {
     }
     if (name === 'ent') return Math.floor(await this.evaluateExpression(args[0], env));
     if (this.functions[name]) return await this.executeFunction(name, args, env);
-    throw new Error(`Fonction '${name}' non définie`);
+    throw new Error(this._formatError(`Fonction '${name}' non définie`, expr));
   }
 
   async requestInput(promptText) {

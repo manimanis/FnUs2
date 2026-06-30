@@ -91,22 +91,25 @@ class Parser {
         this.expectKeyword('De');
         const size = this.expect('NUMBER');
         const elemType = this.expect('TYPE');
-        return { type: 'TypeDecl', name: name.value, arraySize: parseInt(size.value), elemType: elemType.value };
+        return { type: 'TypeDecl', name: name.value, arraySize: parseInt(size.value), elemType: elemType.value, line: name.line };
     }
 
     parseVarDecl() {
         this.expect('KEYWORD', 'Var');
         const decls = [];
-        const ids = [this.expect('IDENTIFIER').value];
+        const firstId = this.expect('IDENTIFIER');
+        const ids = [firstId.value];
         while (this.match('DELIMITER', ',')) ids.push(this.expect('IDENTIFIER').value);
         this.expect('DELIMITER', ':');
         let varType;
+        let typeToken;
         if (this.peek().type === 'TYPE' || this.peek().type === 'IDENTIFIER') {
-            varType = this.next().value;
+            typeToken = this.next();
+            varType = typeToken.value;
         } else {
             this.error('Attendu un type (entier, réel, chaîne, ...)');
         }
-        decls.push({ type: 'VarDecl', names: ids, varType });
+        decls.push({ type: 'VarDecl', names: ids, varType, line: firstId.line });
 
         // Handle continuation lines like "    t: tab" without extra Var/;
         this.consumeSemicolons();
@@ -120,7 +123,7 @@ class Parser {
             } else {
                 this.error('Attendu un type');
             }
-            decls.push({ type: 'VarDecl', names: moreIds, varType: moreType });
+            decls.push({ type: 'VarDecl', names: moreIds, varType: moreType, line: moreIds[0].line || this.peek().line });
             this.consumeSemicolons();
         }
         return decls;
@@ -138,7 +141,7 @@ class Parser {
         const body = this.parseStatementBlock('Fin');
         // Prepend variable declarations to body as assignments
         const fullBody = [...localVars, ...body];
-        return { type: 'Procedure', name: name.value, params, body: fullBody };
+        return { type: 'Procedure', name: name.value, params, body: fullBody, line: name.line };
     }
 
     parseFunction() {
@@ -154,7 +157,7 @@ class Parser {
         this.expect('KEYWORD', 'Début');
         const body = this.parseStatementBlock('Fin');
         const fullBody = [...localVars, ...body];
-        return { type: 'Function', name: name.value, params, returnType: returnType.value, body: fullBody };
+        return { type: 'Function', name: name.value, params, returnType: returnType.value, body: fullBody, line: name.line };
     }
 
     parseLocalVars() {
@@ -256,15 +259,16 @@ class Parser {
 
         if (token.type === 'IDENTIFIER') {
             const name = token.value;
+            const line = token.line;
             this.next();
             if (this.peek().type === 'DELIMITER' && this.peek().value === '(') {
                 const args = this.parseArgs();
-                return { type: 'Call', name, args };
+                return { type: 'Call', name, args, line };
             }
             if (this.peek().type === 'ARROW') {
                 this.next();
                 const value = this.parseExpression();
-                return { type: 'Assign', target: name, value };
+                return { type: 'Assign', target: name, value, line };
             }
             if (this.peek().type === 'DELIMITER' && this.peek().value === '[') {
                 this.next();
@@ -272,7 +276,7 @@ class Parser {
                 this.expect('DELIMITER', ']');
                 this.expect('ARROW');
                 const value = this.parseExpression();
-                return { type: 'ArrayAssign', target: name, index, value };
+                return { type: 'ArrayAssign', target: name, index, value, line };
             }
             this.error('Attendu ←, ( ou [ après un identifiant');
         }
@@ -313,7 +317,7 @@ class Parser {
     }
 
     parseIf() {
-        this.expect('KEYWORD', 'Si');
+        const siToken = this.expect('KEYWORD', 'Si');
         const condition = this.parseExpression();
         this.expect('KEYWORD', 'Alors');
         const thenBlock = this.parseUntilIfBlock();
@@ -334,7 +338,7 @@ class Parser {
         if (!this.matchPair('Fin', 'Si')) {
             if (this.valEq(this.peek(), 'Fin')) this.next();
         }
-        return { type: 'If', condition, thenBlock, elseIfBlocks, elseBlock };
+        return { type: 'If', condition, thenBlock, elseIfBlocks, elseBlock, line: siToken.line };
     }
 
     isSinonSi() {
@@ -364,7 +368,7 @@ class Parser {
     }
 
     parseFor() {
-        this.expect('KEYWORD', 'Pour');
+        const pourToken = this.expect('KEYWORD', 'Pour');
         const varName = this.expect('IDENTIFIER');
         this.expectKeyword('De');
         const start = this.parseExpression();
@@ -378,19 +382,19 @@ class Parser {
         if (!this.matchPair('Fin', 'Pour')) {
             if (this.valEq(this.peek(), 'Fin')) this.next();
         }
-        return { type: 'For', varName: varName.value, start, end, step, body };
+        return { type: 'For', varName: varName.value, start, end, step, body, line: pourToken.line };
     }
 
     parseRepeat() {
-        this.expectKeyword('Répéter');
+        const repeterToken = this.expectKeyword('Répéter');
         const body = this.parseUntil(['Jusqu\'à']);
         this.expect('KEYWORD', 'Jusqu\'à');
         const condition = this.parseExpression();
-        return { type: 'Repeat', body, condition };
+        return { type: 'Repeat', body, condition, line: repeterToken.line };
     }
 
     parseWhile() {
-        this.expect('KEYWORD', 'Tant');
+        const tantToken = this.expect('KEYWORD', 'Tant');
         this.expect('KEYWORD', 'Que');
         const condition = this.parseExpression();
         this.expect('KEYWORD', 'Faire');
@@ -404,11 +408,11 @@ class Parser {
                 if (this.valEq(this.peek(), 'Que')) this.next();
             }
         }
-        return { type: 'While', condition, body };
+        return { type: 'While', condition, body, line: tantToken.line };
     }
 
     parseWrite() {
-        this.expect('KEYWORD', 'Ecrire');
+        const ecrireToken = this.expect('KEYWORD', 'Ecrire');
         this.expect('DELIMITER', '(');
         const args = [];
         let sep = null;
@@ -456,11 +460,11 @@ class Parser {
         }
 
         this.expect('DELIMITER', ')');
-        return { type: 'Write', args, sep, fin };
+        return { type: 'Write', args, sep, fin, line: ecrireToken.line };
     }
 
     parseRead() {
-        this.expect('KEYWORD', 'Lire');
+        const lireToken = this.expect('KEYWORD', 'Lire');
         this.expect('DELIMITER', '(');
         const targets = [];
         const first = this.parseExpression();
@@ -472,7 +476,7 @@ class Parser {
             else this.error('Lire attend un identifiant ou un accès tableau');
         }
         this.expect('DELIMITER', ')');
-        return { type: 'Read', targets };
+        return { type: 'Read', targets, line: lireToken.line };
     }
 
     parseReturn() {
@@ -482,7 +486,7 @@ class Parser {
             throw new Error(`Erreur ligne ${token.line}: Attendu 'Retourner', trouvé '${token.value}'`);
         }
         const value = this.parseExpression();
-        return { type: 'Return', value };
+        return { type: 'Return', value, line: token.line };
     }
 
     parseArgs() {
@@ -591,26 +595,27 @@ class Parser {
             this.expect('DELIMITER', ')');
             return expr;
         }
-        if (token.type === 'NUMBER') { this.next(); return { type: 'Number', value: parseInt(token.value) }; }
-        if (token.type === 'REAL') { this.next(); return { type: 'Real', value: parseFloat(token.value) }; }
-        if (token.type === 'STRING') { this.next(); return { type: 'String', value: token.value }; }
-        if (Parser.normalize(token.value) === 'vrai') { this.next(); return { type: 'Bool', value: true }; }
-        if (Parser.normalize(token.value) === 'faux') { this.next(); return { type: 'Bool', value: false }; }
+        if (token.type === 'NUMBER') { this.next(); return { type: 'Number', value: parseInt(token.value), line: token.line }; }
+        if (token.type === 'REAL') { this.next(); return { type: 'Real', value: parseFloat(token.value), line: token.line }; }
+        if (token.type === 'STRING') { this.next(); return { type: 'String', value: token.value, line: token.line }; }
+        if (Parser.normalize(token.value) === 'vrai') { this.next(); return { type: 'Bool', value: true, line: token.line }; }
+        if (Parser.normalize(token.value) === 'faux') { this.next(); return { type: 'Bool', value: false, line: token.line }; }
 
         if (token.type === 'IDENTIFIER') {
             const name = token.value;
+            const line = token.line;
             this.next();
             if (this.peek().type === 'DELIMITER' && this.peek().value === '(') {
                 const args = this.parseArgs();
-                return { type: 'Call', name, args };
+                return { type: 'Call', name, args, line };
             }
             if (this.peek().type === 'DELIMITER' && this.peek().value === '[') {
                 this.next();
                 const index = this.parseExpression();
                 this.expect('DELIMITER', ']');
-                return { type: 'ArrayAccess', name, index };
+                return { type: 'ArrayAccess', name, index, line };
             }
-            return { type: 'Variable', name };
+            return { type: 'Variable', name, line };
         }
         this.error(`Expression inattendue: '${token.value}'`);
     }

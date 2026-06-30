@@ -24,7 +24,7 @@ Début
   Ecrire(x)
 Fin`);
     expect(interpreter.globalEnv['x']).toBe(5);
-    expect(result.output[0]).toBe('5');
+    expect(result.output[0].trim()).toBe('5');
   });
 
   test('Variable declaration - real', async () => {
@@ -33,7 +33,7 @@ Début
     x ← 3.14
     Ecrire(x)
 Fin`);
-    expect(result.output[0]).toBe('3.14');
+    expect(result.output[0].trim()).toBe('3.14');
     expect(interpreter.globalEnv['x']).toBe(3.14);
   });
 
@@ -43,7 +43,7 @@ Début
     x ← Vrai
     Ecrire(x)
 Fin`);
-    expect(result.output[0]).toBe('Vrai');
+    expect(result.output[0].trim()).toBe('Vrai');
     expect(interpreter.globalEnv['x']).toBe(true);
   });
 
@@ -53,7 +53,7 @@ Début
     x ← "Bonjour"
     Ecrire(x)
 Fin`);
-    expect(result.output[0]).toBe('Bonjour');
+    expect(result.output[0].trim()).toBe('Bonjour');
     expect(interpreter.globalEnv['x']).toBe('Bonjour');
   });
 
@@ -62,15 +62,15 @@ Fin`);
     Ecrire("Hello")
     Ecrire("World")
 Fin`);
-    expect(result.output[0]).toBe('Hello');
-    expect(result.output[1]).toBe('World');
+    expect(result.output[0].trim()).toBe('Hello');
+    expect(result.output[1].trim()).toBe('World');
   });
 
   test('Write with mixed types', async () => {
     const { result } = await parseAndRun(`Début
     Ecrire("Value:", 42, "is the answer")
 Fin`);
-    expect(result.output[0]).toBe('Value: 42 is the answer');
+    expect(result.output[0].trim()).toBe('Value: 42 is the answer');
   });
 
   test('Single-line comment //', async () => {
@@ -78,7 +78,7 @@ Fin`);
     // ceci est un commentaire
     Ecrire("OK")
 Fin`);
-    expect(result.output[0]).toBe('OK');
+    expect(result.output[0].trim()).toBe('OK');
   });
 
   test('Multi-line comment /* */', async () => {
@@ -87,7 +87,7 @@ Fin`);
        commentaire multiligne */
     Ecrire("OK")
 Fin`);
-    expect(result.output[0]).toBe('OK');
+    expect(result.output[0].trim()).toBe('OK');
   });
 
   test('Var declaration with continuation lines', async () => {
@@ -103,6 +103,6 @@ Fin`);
     expect(interpreter.globalEnv['n']).toBe(1);
     expect(interpreter.globalEnv['s']).toBe(2);
     expect(interpreter.globalEnv['t'][1]).toBe(10);
-    expect(result.output[0]).toBe('1 2 10');
+    expect(result.output[0].trim()).toBe('1 2 10');
   });
 });

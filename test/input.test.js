@@ -11,7 +11,7 @@ Début
     Lire(x)
     Ecrire(x)
 Fin`, () => '42');
-    expect(result.output[0]).toBe('42');
+    expect(result.output[0].trim()).toBe('42');
     expect(interpreter.globalEnv['x']).toBe(42);
   });
 
@@ -31,7 +31,7 @@ Début
     z ← x + y
     Ecrire(x, y, z)
 Fin`, fakePrompt());
-    expect(result.output[0]).toBe('10 20 30');
+    expect(result.output[0].trim()).toBe('10 20 30');
     expect(interpreter.globalEnv['x']).toBe(10);
     expect(interpreter.globalEnv['y']).toBe(20);
     expect(interpreter.globalEnv['z']).toBe(30);

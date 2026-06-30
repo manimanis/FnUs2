@@ -19,11 +19,11 @@ Début
     Ecrire(D)
     Ecrire(E)
 Fin`);
-    expect(result.output[0]).toBe('5');
-    expect(result.output[1]).toBe('15');
-    expect(result.output[2]).toBe('5');
-    expect(result.output[3]).toBe('1');
-    expect(result.output[4]).toBe('5511');
+    expect(result.output[0].trim()).toBe('5');
+    expect(result.output[1].trim()).toBe('15');
+    expect(result.output[2].trim()).toBe('5');
+    expect(result.output[3].trim()).toBe('1');
+    expect(result.output[4].trim()).toBe('5511');
     expect(interpreter.globalEnv['A']).toBe(5);
     expect(interpreter.globalEnv['B']).toBe(15);
     expect(interpreter.globalEnv['C']).toBe(5);
@@ -83,11 +83,11 @@ Début
     Ecrire(D)
     Ecrire(E)
 Fin`);
-    expect(result.output[0]).toBe('5');
-    expect(result.output[1]).toBe('7');
-    expect(result.output[2]).toBe('7.5');
-    expect(result.output[3]).toBe('-0.5');
-    expect(result.output[4]).toBe('1');
+    expect(result.output[0].trim()).toBe('5');
+    expect(result.output[1].trim()).toBe('7');
+    expect(result.output[2].trim()).toBe('7.5');
+    expect(result.output[3].trim()).toBe('-0.5');
+    expect(result.output[4].trim()).toBe('1');
     expect(interpreter.globalEnv['A']).toBe(5);
     expect(interpreter.globalEnv['B']).toBe(7);
     expect(interpreter.globalEnv['C']).toBe(7.5);

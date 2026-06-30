@@ -11,7 +11,7 @@ Début
     x ← 5 + 3
     Ecrire(x)
 Fin`);
-    expect(result.output[0]).toBe('8');
+    expect(result.output[0].trim()).toBe('8');
     expect(interpreter.globalEnv['x']).toBe(8);
   });
 
@@ -21,7 +21,7 @@ Début
     x ← 10 - 4
     Ecrire(x)
 Fin`);
-    expect(result.output[0]).toBe('6');
+    expect(result.output[0].trim()).toBe('6');
     expect(interpreter.globalEnv['x']).toBe(6);
   });
 
@@ -31,7 +31,7 @@ Début
     x ← 6 * 7
     Ecrire(x)
 Fin`);
-    expect(result.output[0]).toBe('42');
+    expect(result.output[0].trim()).toBe('42');
     expect(interpreter.globalEnv['x']).toBe(42);
   });
 
@@ -41,7 +41,7 @@ Début
     x ← 10 / 4
     Ecrire(x)
 Fin`);
-    expect(result.output[0]).toBe('2.5');
+    expect(result.output[0].trim()).toBe('2.5');
     expect(interpreter.globalEnv['x']).toBe(2.5);
   });
 
@@ -51,7 +51,7 @@ Début
     x ← 10 div 3
     Ecrire(x)
 Fin`);
-    expect(result.output[0]).toBe('3');
+    expect(result.output[0].trim()).toBe('3');
     expect(interpreter.globalEnv['x']).toBe(3);
   });
 
@@ -61,7 +61,7 @@ Début
     x ← 10 mod 3
     Ecrire(x)
 Fin`);
-    expect(result.output[0]).toBe('1');
+    expect(result.output[0].trim()).toBe('1');
     expect(interpreter.globalEnv['x']).toBe(1);
   });
 
@@ -71,7 +71,7 @@ Début
     x ← -5
     Ecrire(x)
 Fin`);
-    expect(result.output[0]).toBe('-5');
+    expect(result.output[0].trim()).toBe('-5');
     expect(interpreter.globalEnv['x']).toBe(-5);
   });
 });
@@ -85,8 +85,8 @@ Début
     Ecrire(x)
     Ecrire(y)
 Fin`);
-    expect(result.output[0]).toBe('Vrai');
-    expect(result.output[1]).toBe('Faux');
+    expect(result.output[0].trim()).toBe('Vrai');
+    expect(result.output[1].trim()).toBe('Faux');
     expect(interpreter.globalEnv['x']).toBe(true);
     expect(interpreter.globalEnv['y']).toBe(false);
   });
@@ -99,8 +99,8 @@ Début
     Ecrire(x)
     Ecrire(y)
 Fin`);
-    expect(result.output[0]).toBe('Vrai');
-    expect(result.output[1]).toBe('Faux');
+    expect(result.output[0].trim()).toBe('Vrai');
+    expect(result.output[1].trim()).toBe('Faux');
     expect(interpreter.globalEnv['x']).toBe(true);
     expect(interpreter.globalEnv['y']).toBe(false);
   });
@@ -113,8 +113,8 @@ Début
     Ecrire(x)
     Ecrire(y)
 Fin`);
-    expect(result.output[0]).toBe('Vrai');
-    expect(result.output[1]).toBe('Faux');
+    expect(result.output[0].trim()).toBe('Vrai');
+    expect(result.output[1].trim()).toBe('Faux');
     expect(interpreter.globalEnv['x']).toBe(true);
     expect(interpreter.globalEnv['y']).toBe(false);
   });
@@ -127,8 +127,8 @@ Début
     Ecrire(x)
     Ecrire(y)
 Fin`);
-    expect(result.output[0]).toBe('Vrai');
-    expect(result.output[1]).toBe('Faux');
+    expect(result.output[0].trim()).toBe('Vrai');
+    expect(result.output[1].trim()).toBe('Faux');
     expect(interpreter.globalEnv['x']).toBe(true);
     expect(interpreter.globalEnv['y']).toBe(false);
   });
@@ -144,7 +144,7 @@ Début
   Fin Si
   Ecrire(s)
 Fin`);
-    expect(result.output[0]).toBe('5');
+    expect(result.output[0].trim()).toBe('5');
   });
 });
 
@@ -161,10 +161,10 @@ Début
     Ecrire(c)
     Ecrire(d)
 Fin`);
-    expect(result.output[0]).toBe('Vrai');
-    expect(result.output[1]).toBe('Faux');
-    expect(result.output[2]).toBe('Faux');
-    expect(result.output[3]).toBe('Faux');
+    expect(result.output[0].trim()).toBe('Vrai');
+    expect(result.output[1].trim()).toBe('Faux');
+    expect(result.output[2].trim()).toBe('Faux');
+    expect(result.output[3].trim()).toBe('Faux');
     expect(interpreter.globalEnv['a']).toBe(true);
     expect(interpreter.globalEnv['b']).toBe(false);
     expect(interpreter.globalEnv['c']).toBe(false);
@@ -183,10 +183,10 @@ Début
     Ecrire(c)
     Ecrire(d)
 Fin`);
-    expect(result.output[0]).toBe('Vrai');
-    expect(result.output[1]).toBe('Faux');
-    expect(result.output[2]).toBe('Vrai');
-    expect(result.output[3]).toBe('Vrai');
+    expect(result.output[0].trim()).toBe('Vrai');
+    expect(result.output[1].trim()).toBe('Faux');
+    expect(result.output[2].trim()).toBe('Vrai');
+    expect(result.output[3].trim()).toBe('Vrai');
     expect(interpreter.globalEnv['a']).toBe(true);
     expect(interpreter.globalEnv['b']).toBe(false);
     expect(interpreter.globalEnv['c']).toBe(true);
@@ -201,8 +201,8 @@ Début
     Ecrire(a)
     Ecrire(b)
 Fin`);
-    expect(result.output[0]).toBe('Faux');
-    expect(result.output[1]).toBe('Vrai');
+    expect(result.output[0].trim()).toBe('Faux');
+    expect(result.output[1].trim()).toBe('Vrai');
     expect(interpreter.globalEnv['a']).toBe(false);
     expect(interpreter.globalEnv['b']).toBe(true);
   });

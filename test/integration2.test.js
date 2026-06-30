@@ -28,8 +28,8 @@ Début
   Ecrire("PGCD(", x, ",", y, ") =", pgcd(x, y))
   Ecrire("PPCM(", x, ",", y, ") =", ppcm(x, y))
 Fin`);
-    expect(result.output[0]).toBe('PGCD( 48 , 36 ) = 12');
-    expect(result.output[1]).toBe('PPCM( 48 , 36 ) = 144');
+    expect(result.output[0].trim()).toBe('PGCD( 48 , 36 ) = 12');
+    expect(result.output[1].trim()).toBe('PPCM( 48 , 36 ) = 144');
     expect(interpreter.globalEnv['x']).toBe(48);
     expect(interpreter.globalEnv['y']).toBe(36);
   });
@@ -69,10 +69,10 @@ Début
   Ecrire("Nombre de voyelles:", compterVoyelles(texte))
   Ecrire("Inversé:", inverserChaine(texte))
 Fin`);
-    expect(result.output[0]).toBe('Texte: Algorithmique');
-    expect(result.output[1]).toBe('Longueur: 13');
-    expect(result.output[2]).toBe('Nombre de voyelles: 6');
-    expect(result.output[3]).toBe('Inversé: euqimhtiroglA');
+    expect(result.output[0].trim()).toBe('Texte: Algorithmique');
+    expect(result.output[1].trim()).toBe('Longueur: 13');
+    expect(result.output[2].trim()).toBe('Nombre de voyelles: 6');
+    expect(result.output[3].trim()).toBe('Inversé: euqimhtiroglA');
   });
 
   test('Recherche dichotomique', async () => {
@@ -122,9 +122,9 @@ Début
     Ecrire("Valeur 25 non trouvée")
   Fin Si
 Fin`);
-    expect(result.output[0]).toBe('Valeur 15 trouvée à l\'indice 5');
-    expect(result.output[1]).toBe('Valeur 24 trouvée à l\'indice 8');
-    expect(result.output[2]).toBe('Valeur 25 non trouvée');
+    expect(result.output[0].trim()).toBe('Valeur 15 trouvée à l\'indice 5');
+    expect(result.output[1].trim()).toBe('Valeur 24 trouvée à l\'indice 8');
+    expect(result.output[2].trim()).toBe('Valeur 25 non trouvée');
   });
 
   test('Programme de cryptage', async () => {

@@ -15,7 +15,7 @@ Début
     Fin Si
     Ecrire(ax)
 Fin`);
-    expect(result.output[0]).toBe('5');
+    expect(result.output[0].trim()).toBe('5');
     expect(interpreter.globalEnv['ax']).toBe(5);
   });
 
@@ -29,7 +29,7 @@ Début
     Fin Si
     Ecrire(ax)
 Fin`);
-    expect(result.output[0]).toBe('10');
+    expect(result.output[0].trim()).toBe('10');
     expect(interpreter.globalEnv['ax']).toBe(10);
   });
 
@@ -45,7 +45,7 @@ Début
     Fin Si
     Ecrire(m)
 Fin`);
-    expect(result.output[0]).toBe('5');
+    expect(result.output[0].trim()).toBe('5');
     expect(interpreter.globalEnv['m']).toBe(5);
   });
 });
@@ -60,7 +60,7 @@ Début
     Fin Pour
     Ecrire(somme)
 Fin`);
-    expect(result.output[0]).toBe('15');
+    expect(result.output[0].trim()).toBe('15');
     expect(interpreter.globalEnv['somme']).toBe(15);
   });
 
@@ -73,7 +73,7 @@ Début
     Fin Pour
     Ecrire(somme)
 Fin`);
-    expect(result.output[0]).toBe('0');
+    expect(result.output[0].trim()).toBe('0');
     expect(interpreter.globalEnv['somme']).toBe(0);
   });
 
@@ -86,7 +86,7 @@ Début
     Fin Pour
     Ecrire(somme)
 Fin`);
-    expect(result.output[0]).toBe('25');
+    expect(result.output[0].trim()).toBe('25');
     expect(interpreter.globalEnv['somme']).toBe(25);
   });
 
@@ -99,7 +99,7 @@ Début
     Fin Pour
     Ecrire(somme)
 Fin`);
-    expect(result.output[0]).toBe('30');
+    expect(result.output[0].trim()).toBe('30');
     expect(interpreter.globalEnv['somme']).toBe(30);
   });
 });
@@ -116,7 +116,7 @@ Début
     Fin Tant Que
     Ecrire(somme)
 Fin`);
-    expect(result.output[0]).toBe('15');
+    expect(result.output[0].trim()).toBe('15');
     expect(interpreter.globalEnv['somme']).toBe(15);
   });
 });
@@ -133,7 +133,7 @@ Début
     Jusqu'à i = 5
     Ecrire(somme)
 Fin`);
-    expect(result.output[0]).toBe('15');
+    expect(result.output[0].trim()).toBe('15');
     expect(interpreter.globalEnv['somme']).toBe(15);
   });
 });

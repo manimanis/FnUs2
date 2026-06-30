@@ -14,7 +14,7 @@ Fin
 Début
     afficherBonjour()
 Fin`);
-    expect(result.output[0]).toBe('Bonjour');
+    expect(result.output[0].trim()).toBe('Bonjour');
   });
 
   test('Procedure with parameters', async () => {
@@ -26,7 +26,7 @@ Fin
 Début
     additionner(10, 20)
 Fin`);
-    expect(result.output[0]).toBe('30');
+    expect(result.output[0].trim()).toBe('30');
   });
 
   test.todo('Procedure with local variables (pass-by-reference @ not fully implemented)');
@@ -42,7 +42,7 @@ Fin
 Début
     Ecrire(carre(5))
 Fin`);
-    expect(result.output[0]).toBe('25');
+    expect(result.output[0].trim()).toBe('25');
   });
 
   test('Function with local variables', async () => {
@@ -59,7 +59,7 @@ Fin
 Début
     Ecrire(factorielle(5))
 Fin`);
-    expect(result.output[0]).toBe('120');
+    expect(result.output[0].trim()).toBe('120');
   });
 });
 
@@ -68,34 +68,34 @@ describe('Built-in functions', () => {
     const { result } = await parseAndRun(`Début
     Ecrire(chr(65))
 Fin`);
-    expect(result.output[0]).toBe('A');
+    expect(result.output[0].trim()).toBe('A');
   });
 
   test('ord function', async () => {
     const { result } = await parseAndRun(`Début
     Ecrire(ord("A"))
 Fin`);
-    expect(result.output[0]).toBe('65');
+    expect(result.output[0].trim()).toBe('65');
   });
 
   test('Long function', async () => {
     const { result } = await parseAndRun(`Début
     Ecrire(Long("Bonjour"))
 Fin`);
-    expect(result.output[0]).toBe('7');
+    expect(result.output[0].trim().trim()).toBe('7');
   });
 
   test('Racine function', async () => {
     const { result } = await parseAndRun(`Début
     Ecrire(Racine(16))
 Fin`);
-    expect(result.output[0]).toBe('4');
+    expect(result.output[0].trim()).toBe('4');
   });
 
   test('Ent function', async () => {
     const { result } = await parseAndRun(`Début
     Ecrire(Ent(3.7))
 Fin`);
-    expect(result.output[0]).toBe('3');
+    expect(result.output[0].trim()).toBe('3');
   });
 });

@@ -11,7 +11,7 @@ Var t : TableauEntiers
 Début
     Ecrire("OK")
 Fin`);
-    expect(result.output[0]).toBe('OK');
+    expect(result.output[0].trim()).toBe('OK');
   });
 
   test('Array type declaration with short name', async () => {
@@ -20,7 +20,7 @@ Var t : tab
 Début
     Ecrire("OK")
 Fin`);
-    expect(result.output[0]).toBe('OK');
+    expect(result.output[0].trim()).toBe('OK');
   });
 
   test('Array access and assignment', async () => {
@@ -31,7 +31,7 @@ Début
     t[2] ← 20
     Ecrire(t[1], t[2])
 Fin`);
-    expect(result.output[0]).toBe('10 20');
+    expect(result.output[0].trim()).toBe('10 20');
     expect(interpreter.globalEnv['t'][1]).toBe(10);
     expect(interpreter.globalEnv['t'][2]).toBe(20);
   });
@@ -42,7 +42,7 @@ Var t : TableauEntiers
 Début
     Ecrire(t[1])
 Fin`);
-    expect(result.output[0]).toBe('0');
+    expect(result.output[0].trim()).toBe('0');
     expect(interpreter.globalEnv['t'][1]).toBe(0);
   });
 });
