@@ -125,6 +125,11 @@ const props = defineProps({
 
 const emit = defineEmits(['message']);
 
+// Split mode detection (must be defined before lifecycle hooks)
+function updateSplitMode() {
+  isHorizontalSplit.value = window.innerWidth < 1024;
+}
+
 // Storage composables
 const { value: activeTab, load: loadTab, save: saveTab } = useStorage('algo-plus-plus-active-tab', 'output', sessionStorage);
 const { value: outputLines, load: loadOutput, save: saveOutput } = useStorage('algo-plus-plus-output', [], sessionStorage);
@@ -264,9 +269,6 @@ onMounted(() => {
   initWorker();
 
   // Détecter le mode de split selon la taille de la fenêtre
-  function updateSplitMode() {
-    isHorizontalSplit.value = window.innerWidth < 1024;
-  }
   updateSplitMode();
   window.addEventListener('resize', updateSplitMode);
 

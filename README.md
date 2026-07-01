@@ -1,19 +1,44 @@
-# 🔷 ALGO++
+Uncaught (in promise) ReferenceError: updateSplitMode is not defined# 🔷 ALGO++
+
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Vue](https://img.shields.io/badge/Vue-3.5-green)
+![License](https://img.shields.io/badge/license-Educational-lightgrey)
 
 **Interpréteur et Convertisseur d'algorithmes pédagogiques**
 
-ALGO++ est un environnement web interactif permettant d'écrire, d'exécuter et de convertir en Python des algorithmes dans un langage algorithmique simple, inspiré des pseudo-codes utilisés dans l'enseignement de l'algorithmique.
+[Demo](https://manimanis.github.io/FnUs2) • [Report Bug](https://github.com/manimanis/FnUs2/issues) • [Request Feature](https://github.com/manimanis/FnUs2/issues)
 
-L'application fonctionne entièrement côté client (navigation), sans nécessité de serveur backend.
+---
+
+## 📋 Table des matières
+
+- [✨ Fonctionnalités](#-fonctionnalités)
+- [🧠 Langage algorithmique](#-langage-algorithmique)
+- [🚀 Utilisation](#-utilisation)
+- [💡 Cas d'usage](#-cas-dusage)
+- [🛠️ Développement](#️-développement)
+- [🏗️ Structure du projet](#️-structure-du-projet)
+- [🧪 Tests](#-tests)
+- [🧰 Stack technique](#-stack-technique)
+- [📖 Pages du projet](#-pages-du-projet)
+- [🤝 Contribuer](#-contribuer)
+- [⚠️ Limitations connues](#️-limitations-connues)
+- [🗺️ Feuille de route](#️-feuille-de-route)
+- [📄 Licence](#-licence)
 
 ---
 
 ## ✨ Fonctionnalités
 
+### 🎯 Fonctionnalités principales
+
 - **📝 Éditeur de code** avec coloration syntaxique (CodeMirror 6)
 - **▶️ Exécution d'algorithmes** via un interpréteur intégré (Web Worker)
 - **🐍 Conversion en Python** d'un algorithme vers du code Python fonctionnel
 - **📦 12 exemples modulaires** : Fibonacci, PGCD/PPCM, tri par sélection, tri à bulles, recherche dichotomique, statistiques, nombres premiers, manipulation de chaînes, exponentiation rapide, suite arithmétique, jeu de devinette, calculatrice
+
+### 🎨 Interface et expérience utilisateur
+
 - **🌙 Thème sombre/clair** (préférence sauvegardée dans localStorage)
 - **📋 Copie du code Python généré** (avec mise en forme)
 - **⏹ Arrêt** de l'exécution en cours
@@ -34,14 +59,14 @@ ALGO++ utilise un langage de type pseudo-code français, pédagogique et simple,
 
 ### Types de données
 
-| Type      | Description         |
-|-----------|---------------------|
-| `entier`  | Nombre entier       |
-| `reel`    | Nombre à virgule    |
-| `chaine`  | Chaîne de caractères|
-| `caractere` | Caractère unique  |
-| `booleen` | Booléen (`Vrai`/`Faux`) |
-| `tableau` | Tableau typé        |
+| Type        | Description          |
+|-------------|----------------------|
+| `entier`    | Nombre entier        |
+| `reel`      | Nombre à virgule     |
+| `chaine`    | Chaîne de caractères |
+| `caractere` | Caractère unique     |
+| `booleen`   | Booléen (`Vrai`/`Faux`) |
+| `tableau`   | Tableau typé         |
 
 ### Instructions
 
@@ -66,6 +91,8 @@ ALGO++ utilise un langage de type pseudo-code français, pédagogique et simple,
 
 ## 🚀 Utilisation
 
+### Démarrage rapide
+
 1. **Écrivez** votre algorithme dans l'éditeur (ou chargez un exemple depuis le menu **📦 Modulaire**)
 2. **Exécutez** avec le bouton **▶ Exécuter** ou le raccourci `Ctrl+Enter`
 3. Consultez les résultats dans le panneau de **🖥 Sortie**
@@ -86,6 +113,29 @@ Début
   Ecrire("La somme est:", s)
 Fin
 ```
+
+### Raccourcis clavier
+
+| Raccourci           | Action                        |
+|---------------------|-------------------------------|
+| `Ctrl + Enter`      | Exécuter l'algorithme         |
+| `Ctrl + P`          | Mode présentation             |
+| `F11`               | Plein écran                   |
+| `Ctrl + Plus`       | Augmenter la taille de police |
+| `Ctrl + Moins`      | Diminuer la taille de police  |
+
+---
+
+## 💡 Cas d'usage
+
+ALGO++ est particulièrement adapté pour :
+
+- **📚 Enseignement de l'algorithmique** : Apprentissage des concepts fondamentaux (boucles, conditions, fonctions) sans se soucier de la syntaxe d'un langage spécifique
+- **🎓 Cours d'informatique** : Démonstrations en classe avec le mode présentation
+- **✍️ Rédaction d'algorithmes** : Écriture et test rapide d'algorithmes avant implémentation
+- **🔄 Conversion vers Python** : Génération automatique de code Python à partir de pseudo-code
+- **🧪 Tests et validation** : Vérification rapide de la logique algorithmique
+- **📖 Auto-formation** : Apprentissage autonome avec les 12 exemples modulaires
 
 ---
 
@@ -109,13 +159,24 @@ npm install
 
 ### Scripts disponibles
 
-| Commande              | Description                          |
-|-----------------------|--------------------------------------|
-| `npm run dev`         | Lance le serveur de développement    |
+| Commande              | Description                              |
+|-----------------------|------------------------------------------|
+| `npm run dev`         | Lance le serveur de développement        |
 | `npm run build`       | Construit l'application pour la production |
-| `npm run preview`     | Prévisualise le build de production  |
-| `npm test`            | Exécute les tests (vitest)           |
-| `npm run test:watch`  | Exécute les tests en mode watch      |
+| `npm run preview`     | Prévisualise le build de production      |
+| `npm test`            | Exécute les tests (vitest)               |
+| `npm run test:watch`  | Exécute les tests en mode watch          |
+
+### Build de production
+
+```bash
+# Construire l'application
+npm run build
+
+# Les fichiers seront générés dans le dossier dist/
+# Prévisualiser le build
+npm run preview
+```
 
 ---
 
@@ -123,51 +184,63 @@ npm install
 
 ```
 FnUs2/
-├── index.html              # Point d'entrée HTML
-├── package.json            # Configuration npm et dépendances
-├── vite.config.js          # Configuration Vite
+├── index.html                      # Point d'entrée HTML
+├── package.json                    # Configuration npm et dépendances
+├── vite.config.js                  # Configuration Vite
+├── .gitignore                      # Fichiers ignorés par Git
 ├── css/
-│   └── style.css           # Styles de l'application
+│   └── style.css                   # Styles de l'application
 ├── js/
-│   ├── lexer.js            # Analyseur lexical (tokenisation)
-│   ├── parser.js           # Analyseur syntaxique (AST)
-│   ├── interpreter.js      # Interpréteur de l'AST
-│   ├── converter.js        # Convertisseur AST → Python
-│   └── worker.js           # Web Worker pour l'exécution
+│   ├── lexer.js                    # Analyseur lexical (tokenisation)
+│   ├── parser.js                   # Analyseur syntaxique (AST)
+│   ├── interpreter.js              # Interpréteur de l'AST
+│   ├── converter.js                # Convertisseur AST → Python
+│   └── worker.js                   # Web Worker pour l'exécution
 ├── src/
-│   ├── main.js             # Point d'entrée Vue 3
-│   ├── App.vue             # Composant principal (header, router)
-│   ├── router.js           # Configuration du routeur Vue
+│   ├── main.js                     # Point d'entrée Vue 3
+│   ├── App.vue                     # Composant principal (header, router)
+│   ├── router.js                   # Configuration du routeur Vue
 │   ├── codemirror/
-│   │   └── snippets.js     # Snippets CodeMirror pour auto-complétion
+│   │   └── snippets.js             # Snippets CodeMirror pour auto-complétion
 │   ├── components/
-│   │   ├── CodeMirrorEditor.vue  # Éditeur de code CodeMirror 6
-│   │   ├── PythonHighlight.vue   # Mise en évidence syntaxique Python
-│   │   └── InputModal.vue        # Modal de saisie pour Lire()
+│   │   ├── CodeMirrorEditor.vue    # Éditeur de code CodeMirror 6
+│   │   ├── PythonHighlight.vue     # Mise en évidence syntaxique Python
+│   │   └── InputModal.vue          # Modal de saisie pour Lire()
 │   ├── composables/
-│   │   ├── useStorage.js         # Gestion localStorage/sessionStorage réactive
-│   │   ├── useWorker.js          # Gestion des Web Workers
+│   │   ├── useStorage.js           # Gestion localStorage/sessionStorage réactive
+│   │   ├── useWorker.js            # Gestion des Web Workers
 │   │   └── useKeyboardShortcuts.js # Raccourcis clavier déclaratifs
 │   ├── data/
-│   │   └── modularExamples.js    # 12 exemples d'algorithmes modulaires
+│   │   └── modularExamples.js      # 12 exemples d'algorithmes modulaires
 │   └── views/
-│       └── EditorView.vue        # Vue principale (éditeur, sortie, Python)
+│       └── EditorView.vue          # Vue principale (éditeur, sortie, Python)
 ├── fonctions-usuelles/
-│   └── index.html         # Référence interactive des fonctions usuelles
+│   └── index.html                  # Référence interactive des fonctions usuelles
 └── test/
-    ├── arrays.test.js      # Tests tableaux
-    ├── basics.test.js      # Tests de base
-    ├── control-flow.test.js # Tests structures de contrôle
-    ├── converter.test.js   # Tests conversion Python
-    ├── expressions.test.js # Tests expressions
-    ├── helpers.js          # Utilitaires de test
-    ├── input.test.js       # Tests entrée/sortie
-    ├── integration.test.js # Tests d'intégration
+    ├── arrays.test.js              # Tests tableaux
+    ├── basics.test.js              # Tests de base
+    ├── control-flow.test.js        # Tests structures de contrôle
+    ├── converter.test.js           # Tests conversion Python
+    ├── expressions.test.js         # Tests expressions
+    ├── helpers.js                  # Utilitaires de test
+    ├── input.test.js               # Tests entrée/sortie
+    ├── integration.test.js         # Tests d'intégration
     ├── integration2.test.js
-    ├── output.test.js      # Tests sortie
-    ├── procedures.test.js  # Tests procédures/fonctions
-    └── robustness.test.js  # Tests robustesse
+    ├── output.test.js              # Tests sortie
+    ├── procedures.test.js          # Tests procédures/fonctions
+    └── robustness.test.js          # Tests robustesse
 ```
+
+### Architecture
+
+Le projet suit une architecture modulaire en 4 couches :
+
+1. **Lexer** (`js/lexer.js`) : Tokenisation du code source
+2. **Parser** (`js/parser.js`) : Construction de l'AST (Arbre Syntaxique Abstrait)
+3. **Interpreter** (`js/interpreter.js`) : Exécution de l'AST
+4. **Converter** (`js/converter.js`) : Génération de code Python
+
+L'interface utilisateur est développée avec **Vue 3** en Composition API, avec une séparation claire entre la logique métier (composables) et les composants d'interface.
 
 ---
 
@@ -175,30 +248,41 @@ FnUs2/
 
 Les tests utilisent [Vitest](https://vitest.dev/) et couvrent :
 
-- L'analyse lexicale (lexer)
-- L'analyse syntaxique (parser)
-- L'interprétation d'algorithmes complets
-- La conversion vers Python
-- Les cas limites (entrées utilisateur, erreurs, etc.)
+- ✅ L'analyse lexicale (lexer)
+- ✅ L'analyse syntaxique (parser)
+- ✅ L'interprétation d'algorithmes complets
+- ✅ La conversion vers Python
+- ✅ Les cas limites (entrées utilisateur, erreurs, etc.)
+
+### Exécuter les tests
 
 ```bash
+# Exécuter tous les tests
 npm test
+
+# Mode watch pour le développement
+npm run test:watch
 ```
+
+### Couverture des tests
+
+- **Tests unitaires** : Lexer, parser, interpreter, converter
+- **Tests d'intégration** : Algorithmes complets avec entrées/sorties
+- **Tests de robustesse** : Gestion des erreurs et cas limites
 
 ---
 
 ## 🧰 Stack technique
 
-| Technologie               | Rôle                              |
-|---------------------------|-----------------------------------|
-| [Vue 3](https://vuejs.org/) (Composition API) | Framework frontend |
-| [Vue Router](https://router.vuejs.org/) | Routage entre pages |
-| [Vite](https://vitejs.dev/) | Bundler et serveur de développement |
-| [CodeMirror 6](https://codemirror.net/) | Éditeur de code |
-| [Prism.js](https://prismjs.com/) | Coloration syntaxique Python |
-| [Vitest](https://vitest.dev/) | Framework de test |
-| [Composables](https://vuejs.org/guide/reusability/composables.html) | Logique métier réutilisable |
-| Web Workers                | Exécution isolée des algorithmes |
+| Technologie               | Rôle                              | Version  |
+|---------------------------|-----------------------------------|----------|
+| [Vue 3](https://vuejs.org/) (Composition API) | Framework frontend | 3.5+ |
+| [Vue Router](https://router.vuejs.org/) | Routage entre pages | 4.6+ |
+| [Vite](https://vitejs.dev/) | Bundler et serveur de développement | 8.1+ |
+| [CodeMirror 6](https://codemirror.net/) | Éditeur de code | 6.0+ |
+| [Prism.js](https://prismjs.com/) | Coloration syntaxique Python | 1.30+ |
+| [Vitest](https://vitest.dev/) | Framework de test | 4.1+ |
+| Web Workers | Exécution isolée des algorithmes | Natif |
 
 ---
 
@@ -211,6 +295,98 @@ npm test
 
 ---
 
+## 🤝 Contribuer
+
+Les contributions sont les bienvenues ! Voici comment participer :
+
+### Signaler un bug
+
+1. Vérifiez que le bug n'a pas déjà été signalé dans [les issues](https://github.com/manimanis/FnUs2/issues)
+2. Créez une nouvelle issue avec :
+   - Un titre descriptif
+   - Une description du problème
+   - Les étapes pour reproduire
+   - Le comportement attendu vs observé
+
+### Proposer une amélioration
+
+1. Ouvrez une issue pour discuter de votre idée
+2. Attendez les retours de l'équipe
+3. Soumettez une Pull Request avec vos modifications
+
+### Développer
+
+1. Forkez le projet
+2. Créez une branche (`git checkout -b feature/amelioration`)
+3. Committez vos changements (`git commit -m 'Ajout de X'`)
+4. Push vers la branche (`git push origin feature/amelioration`)
+5. Ouvrez une Pull Request
+
+### Style de code
+
+- Utilisez l'ESLint/Prettier configuré dans le projet
+- Écrivez des tests pour les nouvelles fonctionnalités
+- Documentez votre code avec des commentaires clairs
+- Respectez la structure modulaire existante
+
+---
+
+## ⚠️ Limitations connues
+
+- **Portée des variables** : La portée des variables dans les fonctions/procédures pourrait être améliorée
+- **Gestion des erreurs** : Les messages d'erreur pourraient être plus détaillés avec la position exacte dans le code
+- **Tableaux multidimensionnels** : Support limité aux tableaux à une dimension
+- **Types avancés** : Pas de support pour les types composés (structures, enregistrements)
+- **Récursion** : La récursion est supportée mais pourrait manquer d'optimisations (tail-call)
+- **Bibliothèque standard** : Limitée aux fonctions intégrées de base
+
+---
+
+## 🗺️ Feuille de route
+
+### Version 1.1 (à venir)
+- [ ] Amélioration des messages d'erreur avec position précise
+- [ ] Support des tableaux multidimensionnels
+- [ ] Nouvelles fonctions intégrées (tri, recherche avancée)
+- [ ] Export en PDF des algorithmes
+
+### Version 1.2 (future)
+- [ ] Support de structures de données personnalisées
+- [ ] Mode collaboratif en temps réel
+- [ ] Sauvegarde et partage d'algorithmes
+- [ ] Thèmes personnalisables
+
+### Version 2.0 (long terme)
+- [ ] Support d'autres langages cibles (JavaScript, C, Java)
+- [ ] Débogueur visuel pas-à-pas
+- [ ] Visualisation graphique des algorithmes
+- [ ] API REST pour intégration dans d'autres plateformes
+
+---
+
 ## 📄 Licence
 
 Ce projet est à titre éducatif, développé dans le cadre de l'enseignement de l'algorithmique.
+
+**Développé avec ❤️ pour l'éducation**
+
+---
+
+## 🙏 Remerciements
+
+- Inspiré par les pseudo-codes utilisés dans l'enseignement de l'algorithmique en France
+- Construit avec des outils open-source exceptionnels : Vue.js, Vite, CodeMirror, Vitest
+- Merci à tous les contributeurs qui améliorent ce projet
+
+---
+
+## 📞 Contact
+
+Pour toute question ou suggestion :
+
+- **GitHub Issues** : [manimanis/FnUs2/issues](https://github.com/manimanis/FnUs2/issues)
+- **Repository** : [github.com/manimanis/FnUs2](https://github.com/manimanis/FnUs2)
+
+---
+
+**⭐ Si ce projet vous est utile, n'hésitez pas à lui donner une étoile sur GitHub !**
