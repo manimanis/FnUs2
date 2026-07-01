@@ -44,6 +44,10 @@ self.onmessage = async (e) => {
         });
       });
 
+      interpreter.setVariableUpdateCallback((vars) => {
+        self.postMessage({ type: 'variables', vars });
+      });
+
       const result = await interpreter.run(ast);
 
       const execTime = Math.round(performance.now() - startTime);
@@ -65,5 +69,11 @@ self.onmessage = async (e) => {
     if (interpreter) {
       interpreter.stop();
     }
+  }
+  
+  // Send final variables state
+  if (interpreter && type === 'done') {
+    const vars = interpreter.getVars();
+    self.postMessage({ type: 'variables', vars });
   }
 };

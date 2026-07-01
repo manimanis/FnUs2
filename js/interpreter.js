@@ -57,6 +57,7 @@ class Interpreter {
 
   setOutputCallback(cb) { this.outputCallback = cb; }
   setInputCallback(cb) { this.inputCallback = cb; }
+  setVariableUpdateCallback(cb) { this.variableUpdateCallback = cb; }
 
   addOutput(text) {
     this.output.push(text);
@@ -214,6 +215,7 @@ class Interpreter {
     switch (stmt.type) {
       case 'Assign':
         env[stmt.target] = await this.evaluateExpression(stmt.value, env);
+        this._notifyVariableUpdate();
         break;
       case 'ArrayAssign': {
         const arr = env[stmt.target];
@@ -223,6 +225,7 @@ class Interpreter {
           throw new Error(this._formatError(`Indice ${idx} hors bornes`, stmt));
         }
         arr[idx] = await this.evaluateExpression(stmt.value, env);
+        this._notifyVariableUpdate();
         break;
       }
       case 'Write': {
@@ -514,6 +517,18 @@ class Interpreter {
       return inputStr.toLowerCase() === 'vrai' || inputStr === 'true' || inputStr === '1';
     }
     return inputStr;
+  }
+
+  _notifyVariableUpdate() {
+    if (this.variableUpdateCallback) {
+      const vars = {};
+      for (const key in this.globalEnv) {
+        if (Object.prototype.hasOwnProperty.call(this.globalEnv, key)) {
+          vars[key] = this.globalEnv[key];
+        }
+      }
+      this.variableUpdateCallback(vars);
+    }
   }
 
   addInput(value) { this.inputBuffer.push(value); }

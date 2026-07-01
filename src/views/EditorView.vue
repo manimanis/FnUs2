@@ -1,5 +1,7 @@
 <template>
-  <div class="main-container" :class="{ 'split-view': splitView, 'presentation-mode': presentationMode, 'fullscreen': isFullscreen }" :style="splitView ? getContainerStyle() : {}">
+  <div class="main-container"
+    :class="{ 'split-view': splitView, 'presentation-mode': presentationMode, 'fullscreen': isFullscreen }"
+    :style="splitView ? getContainerStyle() : {}">
     <div class="editor-panel">
       <div class="panel-header">
         <span>📝 Éditeur d'algorithme</span>
@@ -11,14 +13,8 @@
         </div>
       </div>
       <div class="editor-wrapper">
-        <CodeMirrorEditor 
-          ref="editorRef"
-          :modelValue="code"
-          @update:modelValue="onEditorUpdate"
-          placeholder="Écrivez votre algorithme ici..." 
-          :dark="darkMode"
-          :fontSize="fontSize"
-        />
+        <CodeMirrorEditor ref="editorRef" :initialContent="code" @update:modelValue="onEditorUpdate"
+          placeholder="Écrivez votre algorithme ici..." :dark="darkMode" :fontSize="fontSize" />
       </div>
     </div>
 
@@ -37,26 +33,20 @@
           </div>
         </div>
         <div class="output-content" ref="outputContainer">
-          <div v-for="(line, i) in outputLines" :key="i"
-            :class="['output-line', line.type ? line.type + '-line' : '']">
+          <div v-for="(line, i) in outputLines" :key="i" :class="['output-line', line.type ? line.type + '-line' : '']">
             {{ line.text }}
           </div>
           <div v-if="showInputModal" class="input-line">
             <span class="input-prompt-text">{{ inputModalMessage }}</span>
-            <input
-              ref="inlineInputRef"
-              v-model="inputValue"
-              type="text"
-              @keyup.enter="submitInlineInput"
-              @keyup.esc="cancelInlineInput"
-              class="inline-input"
-            />
+            <input ref="inlineInputRef" v-model="inputValue" type="text" @keyup.enter="submitInlineInput"
+              @keyup.esc="cancelInlineInput" class="inline-input" />
           </div>
           <div v-if="executing && outputLines.length > 0 && execTime === null" class="executing-indicator">
             <span class="executing-spinner"></span>
             <span>Exécution en cours...</span>
           </div>
-          <div v-if="outputLines.length === 0 && !executing && !showInputModal" style="color:var(--comment);font-style:italic;">
+          <div v-if="outputLines.length === 0 && !executing && !showInputModal"
+            style="color:var(--comment);font-style:italic;">
             ▶ Exécuter pour voir les résultats...
           </div>
         </div>
@@ -74,12 +64,8 @@
             Saisissez les valeurs qui seront lues par l'instruction <code>Lire</code>, une par ligne.
             Si le nombre de données est insuffisant, une saisie interactive sera demandée.
           </div>
-          <textarea
-            v-model="dataText"
-            class="data-textarea"
-            placeholder="12&#10;42&#10;Bonjour&#10;3.14"
-            spellcheck="false"
-          ></textarea>
+          <textarea v-model="dataText" class="data-textarea" placeholder="12&#10;42&#10;Bonjour&#10;3.14"
+            spellcheck="false"></textarea>
         </div>
       </div>
 
@@ -87,7 +73,8 @@
         <div class="panel-header">
           <span>🐍 Code Python généré</span>
           <div class="header-actions">
-            <button class="btn btn-outline" @click="copyPython" style="font-size:0.7rem;padding:4px 10px;">📋 Copier</button>
+            <button class="btn btn-outline" @click="copyPython" style="font-size:0.7rem;padding:4px 10px;">📋
+              Copier</button>
             <button class="btn-icon" @click="takeScreenshot" title="Capture d'écran">📷</button>
           </div>
         </div>
@@ -98,9 +85,40 @@
         </div>
       </div>
 
+      <div class="output-section" v-if="activeTab === 'variables'">
+        <div class="panel-header">
+          <span>📊 État des variables</span>
+          <div class="header-actions">
+            <button class="btn-icon" @click="clearVariables" title="Effacer les variables">🗑</button>
+          </div>
+        </div>
+        <div class="output-content variables-content">
+          <div v-if="Object.keys(variables).length === 0" style="color:var(--comment);font-style:italic;">
+            Aucune variable à afficher. Exécutez le programme pour voir l'état des variables.
+          </div>
+          <table v-else class="variables-table">
+            <thead>
+              <tr>
+                <th>Variable</th>
+                <th>Valeur</th>
+                <th>Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(value, name) in variables" :key="name">
+                <td class="var-name">{{ name }}</td>
+                <td class="var-value">{{ formatValue(value) }}</td>
+                <td class="var-type">{{ getType(value) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="tabs">
         <div class="tab" :class="{ active: activeTab === 'output' }" @click="activeTab = 'output'">🖥 Sortie</div>
         <div class="tab" :class="{ active: activeTab === 'data' }" @click="activeTab = 'data'">📊 Données</div>
+        <div class="tab" :class="{ active: activeTab === 'variables' }" @click="activeTab = 'variables'">🔢 Variables</div>
         <div class="tab" :class="{ active: activeTab === 'python' }" @click="activeTab = 'python'">🐍 Python</div>
       </div>
     </div>
@@ -108,7 +126,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, watch, onMounted, onUnmounted } from 'vue';
+import { ref, nextTick, watch, onMounted, onUnmounted, triggerRef } from 'vue';
 import { Lexer } from '../../js/lexer.js';
 import { Parser } from '../../js/parser.js';
 import { PythonConverter } from '../../js/converter.js';
@@ -140,6 +158,7 @@ const { value: outputLines, load: loadOutput, save: saveOutput } = useStorage('a
 const { value: pythonCode, load: loadPython, save: savePython } = useStorage('algo-plus-plus-python', '', sessionStorage);
 const { value: dataText, load: loadData, save: saveData } = useStorage('algo-plus-plus-data', '', localStorage);
 const { value: fontSize, load: loadFontSize } = useStorage('algo-plus-plus-font-size', 13);
+const variables = ref({});
 const { value: splitView, load: loadSplitView } = useStorage('algo-plus-plus-split-view', true);
 const { value: editorWidth, load: loadEditorWidth } = useStorage('algo-plus-plus-editor-width', 50);
 const { value: editorHeight, load: loadEditorHeight } = useStorage('algo-plus-plus-editor-height', 50);
@@ -177,12 +196,12 @@ watch(showInputModal, (newVal) => {
 });
 
 // Worker composable
-const { 
-  worker, 
-  executing, 
-  execTime, 
-  init: initWorker, 
-  terminate: terminateWorker, 
+const {
+  worker,
+  executing,
+  execTime,
+  init: initWorker,
+  terminate: terminateWorker,
   postMessage: postWorkerMessage,
   setExecuting,
   setExecTime
@@ -295,6 +314,14 @@ useKeyboardShortcuts([
 
 onMounted(() => {
   loadState();
+  
+  // Set content in editor after it's initialized
+  nextTick(() => {
+    if (editorRef.value && editorRef.value.setContent && code.value) {
+      editorRef.value.setContent(code.value);
+    }
+  });
+  
   initWorker();
 
   // Détecter le mode de split selon la taille de la fenêtre
@@ -313,6 +340,8 @@ onMounted(() => {
       pendingInputId.value = data.id;
       inputModalMessage.value = data.prompt;
       showInputModal.value = true;
+    } else if (data.type === 'variables') {
+      variables.value = data.vars || {};
     } else if (data.type === 'done') {
       if (outputLines.value.length === 0) {
         addOutput({ text: '✅ Programme exécuté avec succès.', type: 'success' });
@@ -341,11 +370,13 @@ onMounted(() => {
   window.addEventListener('editor-change-font-size', handleChangeFontSize);
   window.addEventListener('editor-toggle-presentation', togglePresentationMode);
   window.addEventListener('editor-toggle-fullscreen', toggleFullscreen);
-  
+
   document.addEventListener('fullscreenchange', handleFullscreenChange);
 });
 
 onUnmounted(() => {
+  saveState();
+  
   terminateWorker();
   window.removeEventListener('editor-run', handleEditorRun);
   window.removeEventListener('editor-stop', handleEditorStop);
@@ -448,7 +479,7 @@ function resize(e) {
   if (!isResizing.value) return;
   const container = document.querySelector('.main-container');
   const containerRect = container.getBoundingClientRect();
-  
+
   if (isHorizontalSplit.value) {
     // Split horizontal : on ajuste la hauteur
     const newHeight = ((e.clientY - containerRect.top) / containerRect.height) * 100;
@@ -504,7 +535,7 @@ function exportOutput() {
     showMessage('⚠️ Aucune sortie à exporter');
     return;
   }
-  
+
   const text = outputLines.value.map(line => line.text).join('\n');
   const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -539,6 +570,32 @@ function copyPython() {
 function clearData() {
   dataText.value = '';
   showMessage('🗑 Données effacées');
+}
+
+function clearVariables() {
+  variables.value = {};
+  showMessage('🗑 Variables effacées');
+}
+
+function formatValue(value) {
+  if (value === null) return 'null';
+  if (value === undefined) return 'undefined';
+  if (Array.isArray(value)) return `[${value.join(', ')}]`;
+  if (typeof value === 'boolean') return value ? 'Vrai' : 'Faux';
+  if (typeof value === 'string') return `"${value}"`;
+  return String(value);
+}
+
+function getType(value) {
+  if (value === null) return 'null';
+  if (value === undefined) return 'undefined';
+  if (Array.isArray(value)) return 'tableau';
+  if (typeof value === 'boolean') return 'booléen';
+  if (typeof value === 'number') {
+    return Number.isInteger(value) ? 'entier' : 'réel';
+  }
+  if (typeof value === 'string') return 'chaîne';
+  return typeof value;
 }
 
 function clearAll() {
@@ -609,10 +666,10 @@ function submitInlineInput() {
     }
   }
   if (pendingInputId.value && worker.value) {
-    worker.value.postMessage({ 
-      type: 'input_response', 
-      id: pendingInputId.value, 
-      value: value 
+    worker.value.postMessage({
+      type: 'input_response',
+      id: pendingInputId.value,
+      value: value
     });
     pendingInputId.value = null;
   }
@@ -624,10 +681,10 @@ function cancelInlineInput() {
   const emptyValue = '';
   addOutput({ text: emptyValue + '\n' });
   if (pendingInputId.value && worker.value) {
-    worker.value.postMessage({ 
-      type: 'input_response', 
-      id: pendingInputId.value, 
-      value: emptyValue 
+    worker.value.postMessage({
+      type: 'input_response',
+      id: pendingInputId.value,
+      value: emptyValue
     });
     pendingInputId.value = null;
   }
@@ -651,3 +708,119 @@ defineExpose({
   })
 });
 </script>
+
+<style scoped>
+.variables-content {
+  padding: 20px;
+  overflow-y: auto;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+}
+
+.variables-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.variables-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-bottom: none;
+}
+
+.variables-table th {
+  padding: 14px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.variables-table tbody tr {
+  border-bottom: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+  background: var(--bg-primary);
+}
+
+.variables-table tbody tr:hover {
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%);
+  transform: translateX(4px);
+}
+
+.variables-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.variables-table td {
+  padding: 12px 16px;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.var-name {
+  font-weight: 700;
+  color: #667eea;
+  font-size: 0.95rem;
+  letter-spacing: 0.3px;
+}
+
+.var-value {
+  color: var(--text-primary);
+  font-weight: 500;
+  background: rgba(102, 126, 234, 0.05);
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-block;
+  min-width: 100px;
+}
+
+.var-type {
+  color: #764ba2;
+  font-style: italic;
+  font-size: 0.85rem;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+/* Animation d'apparition */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.variables-table tbody tr {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Scrollbar personnalisée */
+.variables-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+.variables-content::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 10px;
+}
+
+.variables-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 10px;
+}
+
+.variables-content::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
+}
+</style>
