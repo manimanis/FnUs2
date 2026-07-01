@@ -1,6 +1,6 @@
 <template>
-  <div class="main-container" :class="{ 'split-view': splitView, 'presentation-mode': presentationMode, 'fullscreen': isFullscreen }">
-    <div class="editor-panel" :style="splitView ? { flex: `0 0 ${editorWidth}%` } : {}">
+  <div class="main-container" :class="{ 'split-view': splitView, 'presentation-mode': presentationMode, 'fullscreen': isFullscreen }" :style="splitView ? getContainerStyle() : {}">
+    <div class="editor-panel">
       <div class="panel-header">
         <span>📝 Éditeur d'algorithme</span>
         <div class="header-actions">
@@ -133,6 +133,7 @@ const { value: dataText, load: loadData, save: saveData } = useStorage('algo-plu
 const { value: fontSize, load: loadFontSize } = useStorage('algo-plus-plus-font-size', 13);
 const { value: splitView, load: loadSplitView } = useStorage('algo-plus-plus-split-view', true);
 const { value: editorWidth, load: loadEditorWidth } = useStorage('algo-plus-plus-editor-width', 50);
+const { value: editorHeight, load: loadEditorHeight } = useStorage('algo-plus-plus-editor-height', 50);
 
 // Refs
 const pythonElement = ref(null);
@@ -141,6 +142,7 @@ const pythonContainer = ref(null);
 const isResizing = ref(false);
 const presentationMode = ref(false);
 const isFullscreen = ref(false);
+const isHorizontalSplit = ref(false);
 
 // Input inline state
 const showInputModal = ref(false);
@@ -237,6 +239,7 @@ function loadState() {
 loadFontSize();
 loadSplitView();
 loadEditorWidth();
+loadEditorHeight();
 loadData();
 
 // Listen for events dispatched by App.vue header buttons
@@ -259,6 +262,13 @@ function handleChangeFontSize(e) {
 onMounted(() => {
   loadState();
   initWorker();
+
+  // Détecter le mode de split selon la taille de la fenêtre
+  function updateSplitMode() {
+    isHorizontalSplit.value = window.innerWidth < 1024;
+  }
+  updateSplitMode();
+  window.addEventListener('resize', updateSplitMode);
 
   worker.value.onmessage = (e) => {
     const data = e.data;
@@ -328,6 +338,7 @@ onUnmounted(() => {
   window.removeEventListener('editor-toggle-presentation', togglePresentationMode);
   window.removeEventListener('editor-toggle-fullscreen', toggleFullscreen);
   document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  window.removeEventListener('resize', updateSplitMode);
 });
 
 function scrollOutput() {
@@ -397,6 +408,18 @@ function toggleSplitView() {
   splitView.value = !splitView.value;
 }
 
+function getContainerStyle() {
+  if (isHorizontalSplit.value) {
+    return {
+      '--editor-size': `${editorHeight.value}%`
+    };
+  } else {
+    return {
+      '--editor-size': `${editorWidth.value}%`
+    };
+  }
+}
+
 function startResize(e) {
   isResizing.value = true;
   document.addEventListener('mousemove', resize);
@@ -407,8 +430,16 @@ function resize(e) {
   if (!isResizing.value) return;
   const container = document.querySelector('.main-container');
   const containerRect = container.getBoundingClientRect();
-  const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
-  editorWidth.value = Math.min(Math.max(newWidth, 20), 80);
+  
+  if (isHorizontalSplit.value) {
+    // Split horizontal : on ajuste la hauteur
+    const newHeight = ((e.clientY - containerRect.top) / containerRect.height) * 100;
+    editorHeight.value = Math.min(Math.max(newHeight, 20), 80);
+  } else {
+    // Split vertical : on ajuste la largeur
+    const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+    editorWidth.value = Math.min(Math.max(newWidth, 20), 80);
+  }
 }
 
 function stopResize() {

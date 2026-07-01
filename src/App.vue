@@ -42,7 +42,7 @@
         </div>
         <div class="dropdown">
           <button class="btn btn-info dropdown-toggle" @click="showModularMenu = !showModularMenu"
-            title="Charger un exemple modulaire">📦 Modulaire ▾</button>
+            title="Charger un exemple modulaire">📦 <span class="btn-text">Modulaire</span> ▾</button>
         <div class="dropdown-menu" :class="{ 'dropdown-menu--show': showModularMenu }"
           @mouseleave="showModularMenu = false">
             <div class="dropdown-header">Programmes modulaires</div>

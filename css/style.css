@@ -188,7 +188,9 @@ header .dropdown .btn {
 }
 
 @media (max-width: 900px) {
-    header .btn .btn-text {
+
+    header .btn .btn-text,
+    header .dropdown .btn-text {
         display: none;
     }
 
@@ -294,10 +296,14 @@ header .dropdown .btn {
 
 /* === MAIN LAYOUT === */
 .main-container {
-	display: grid;
-	grid-template-columns: 1fr auto 1fr;
-	min-height: 0;
-	gap: 0;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    min-height: 0;
+    gap: 0;
+}
+
+.main-container:not(.split-view) {
+    grid-template-columns: 1fr;
 }
 
 .main-container:not(.split-view) .output-panel {
@@ -306,6 +312,28 @@ header .dropdown .btn {
 
 .main-container:not(.split-view) .resizer {
     display: none;
+}
+
+/* Mode split avec redimensionnement */
+.main-container.split-view {
+    grid-template-columns: var(--editor-size, 50%) auto 1fr;
+}
+
+.main-container.split-view .editor-panel {
+    border-right: 1px solid var(--border);
+}
+
+/* Mode horizontal pour petites fenêtres */
+@media (max-width: 1024px) {
+    .main-container.split-view {
+        grid-template-rows: var(--editor-size, 50%) auto 1fr;
+        grid-template-columns: initial;
+    }
+    
+    .main-container.split-view .editor-panel {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+    }
 }
 
 /* === RESIZER === */
@@ -416,10 +444,11 @@ header .dropdown .btn {
 
 /* === LEFT PANEL (EDITOR) === */
 .editor-panel {
-	display: grid;
-	grid-template-rows: auto 1fr;
-	border-right: 1px solid var(--border);
-	max-height: calc(100vh - 56px);
+    display: grid;
+    grid-template-rows: auto 1fr;
+    border-right: 1px solid var(--border);
+    max-height: calc(100vh - 56px);
+    height: 100vh;
 }
 
 .panel-header {
@@ -438,8 +467,8 @@ header .dropdown .btn {
 }
 
 .editor-wrapper {
-	position: relative;
-	max-height: 100%;
+    position: relative;
+    max-height: 100%;
 }
 
 .codemirror-wrapper {
@@ -479,16 +508,16 @@ header .dropdown .btn {
 }
 
 .output-content {
-	padding: 12px 16px;
-	font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace;
-	font-size: 13px;
-	line-height: 1.5;
-	overflow-y: auto;
-	overflow-x: auto;
-	background: var(--code-bg);
-	white-space: pre-wrap;
-	word-break: break-word;
-	color: var(--text-primary);
+    padding: 12px 16px;
+    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-y: auto;
+    overflow-x: auto;
+    background: var(--code-bg);
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text-primary);
 }
 
 .output-content .output-line {
@@ -608,7 +637,8 @@ header .dropdown .btn {
         border-bottom: 1px solid var(--border);
     }
 
-    .editor-panel, .output-panel {
+    .editor-panel,
+    .output-panel {
         height: 100%;
         max-height: 100%;
     }
