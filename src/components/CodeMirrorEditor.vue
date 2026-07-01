@@ -207,6 +207,9 @@ const editorContainer = ref(null);
 let view = null;
 let lastEmittedValue = props.modelValue; // Tracker la dernière valeur émise
 
+// Theme compartment for dynamic theme switching
+const themeCompartment = new Compartment();
+
 // Tooltips integration
 const { showTooltip, hideTooltip, getTooltip } = useTooltips();
 
@@ -408,17 +411,9 @@ function createExtensions(dark) {
       override: [mySnippetsCompletion],
       activateOnTyping: true
     }),
-
+    themeCompartment.of(dark ? [oneDark] : [lightTheme, lightSyntax]),
+    baseTheme
   ];
-
-  if (dark) {
-    exts.push(oneDark);
-  } else {
-    exts.push(lightTheme);
-    exts.push(lightSyntax);
-  }
-
-  exts.push(baseTheme);
 
   return exts;
 }
@@ -444,6 +439,15 @@ function buildView() {
       scroller.style.fontSize = `${props.fontSize}px`;
     }
   }
+}
+
+function updateTheme(dark) {
+  if (!view) return;
+  
+  // Use compartment to swap theme without destroying the view
+  view.dispatch({
+    effects: themeCompartment.reconfigure(dark ? [oneDark] : [lightTheme, lightSyntax])
+  });
 }
 
 // Méthode exposée pour mettre à jour le contenu de l'extérieur
@@ -556,8 +560,8 @@ onUnmounted(() => {
   }
 });
 
-watch(() => props.dark, () => {
-  buildView();
+watch(() => props.dark, (newDark) => {
+  updateTheme(newDark);
 });
 
 watch(() => props.fontSize, (newSize) => {

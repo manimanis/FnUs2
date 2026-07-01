@@ -71,6 +71,10 @@ class Parser {
                 const decls = this.parseVarDecl();
                 for (const d of decls) declarations.push(d);
             }
+            else if (this.isVarDeclaration()) {
+                const decls = this.parseVarDeclWithoutVar();
+                for (const d of decls) declarations.push(d);
+            }
             else if (v === 'procedure') declarations.push(this.parseProcedure());
             else if (v === 'fonction') declarations.push(this.parseFunction());
             else if (v === 'debut') {
@@ -94,8 +98,28 @@ class Parser {
         return { type: 'TypeDecl', name: name.value, arraySize: parseInt(size.value), elemType: elemType.value, line: name.line };
     }
 
+    isVarDeclaration() {
+        const token = this.peek();
+        // Check if current token is an identifier followed by ':' or ','
+        if (token.type === 'IDENTIFIER') {
+            const nextToken = this.tokens[this.pos + 1];
+            if (nextToken && (nextToken.type === 'DELIMITER' && (nextToken.value === ':' || nextToken.value === ','))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     parseVarDecl() {
         this.expect('KEYWORD', 'Var');
+        return this.parseVarDeclarations();
+    }
+
+    parseVarDeclWithoutVar() {
+        return this.parseVarDeclarations();
+    }
+
+    parseVarDeclarations() {
         const decls = [];
         const firstId = this.expect('IDENTIFIER');
         const ids = [firstId.value];
@@ -162,8 +186,10 @@ class Parser {
 
     parseLocalVars() {
         const stmts = [];
-        while (this.peek().value.toLowerCase() === 'var') {
-            const decls = this.parseVarDecl();
+        while (this.peek().value.toLowerCase() === 'var' || this.isVarDeclaration()) {
+            const decls = this.peek().value.toLowerCase() === 'var' 
+                ? this.parseVarDecl() 
+                : this.parseVarDeclWithoutVar();
             for (const d of decls) {
                 stmts.push({ type: 'LocalVarDecl', names: d.names, varType: d.varType });
             }
