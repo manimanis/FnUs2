@@ -36,7 +36,7 @@ Fin`;
   test('Large loop completes within limits', async () => {
     const code = `Var i, x: entier 
 Début
-  Pour i de 1 à 10000 Faire
+  Pour i de 1 à 1000000 Faire
     x ← i
   Fin Pour
   Ecrire(x)

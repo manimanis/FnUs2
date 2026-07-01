@@ -50,9 +50,34 @@
               class="inline-input"
             />
           </div>
+          <div v-if="executing && outputLines.length > 0 && execTime === null" class="executing-indicator">
+            <span class="executing-spinner"></span>
+            <span>Exécution en cours...</span>
+          </div>
           <div v-if="outputLines.length === 0 && !executing && !showInputModal" style="color:var(--comment);font-style:italic;">
             ▶ Exécuter pour voir les résultats...
           </div>
+        </div>
+      </div>
+
+      <div class="output-section" v-if="activeTab === 'data'">
+        <div class="panel-header">
+          <span>📊 Données d'entrée</span>
+          <div class="header-actions">
+            <button class="btn-icon" @click="clearData" title="Effacer les données">🗑</button>
+          </div>
+        </div>
+        <div class="output-content data-content">
+          <div class="data-help">
+            Saisissez les valeurs qui seront lues par l'instruction <code>Lire</code>, une par ligne.
+            Si le nombre de données est insuffisant, une saisie interactive sera demandée.
+          </div>
+          <textarea
+            v-model="dataText"
+            class="data-textarea"
+            placeholder="12&#10;42&#10;Bonjour&#10;3.14"
+            spellcheck="false"
+          ></textarea>
         </div>
       </div>
 
@@ -73,6 +98,7 @@
 
       <div class="tabs">
         <div class="tab" :class="{ active: activeTab === 'output' }" @click="activeTab = 'output'">🖥 Sortie</div>
+        <div class="tab" :class="{ active: activeTab === 'data' }" @click="activeTab = 'data'">📊 Données</div>
         <div class="tab" :class="{ active: activeTab === 'python' }" @click="activeTab = 'python'">🐍 Python</div>
       </div>
     </div>
@@ -103,6 +129,7 @@ const emit = defineEmits(['message']);
 const { value: activeTab, load: loadTab, save: saveTab } = useStorage('algo-plus-plus-active-tab', 'output', sessionStorage);
 const { value: outputLines, load: loadOutput, save: saveOutput } = useStorage('algo-plus-plus-output', [], sessionStorage);
 const { value: pythonCode, load: loadPython, save: savePython } = useStorage('algo-plus-plus-python', '', sessionStorage);
+const { value: dataText, load: loadData, save: saveData } = useStorage('algo-plus-plus-data', '', localStorage);
 const { value: fontSize, load: loadFontSize } = useStorage('algo-plus-plus-font-size', 13);
 const { value: splitView, load: loadSplitView } = useStorage('algo-plus-plus-split-view', true);
 const { value: editorWidth, load: loadEditorWidth } = useStorage('algo-plus-plus-editor-width', 50);
@@ -158,6 +185,11 @@ Début
   Ecrire("La somme est:", s)
 Fin`);
 
+// Auto-save watcher
+watch(code, () => {
+  saveState();
+}, { deep: true });
+
 const STORAGE_KEY = 'algo-plus-plus-state';
 
 function showMessage(msg) {
@@ -183,13 +215,13 @@ function saveState() {
     execTime: execTime.value
   };
   try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (e) { /* ignore */ }
 }
 
 function loadState() {
   try {
-    const saved = sessionStorage.getItem(STORAGE_KEY);
+    const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const state = JSON.parse(saved);
       if (state.code !== undefined) code.value = state.code;
@@ -205,6 +237,7 @@ function loadState() {
 loadFontSize();
 loadSplitView();
 loadEditorWidth();
+loadData();
 
 // Listen for events dispatched by App.vue header buttons
 function handleEditorRun() { runCode(); }
@@ -305,6 +338,13 @@ function scrollOutput() {
   });
 }
 
+function parseDataInputs() {
+  return dataText.value
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0);
+}
+
 function runCode() {
   outputLines.value.splice(0);
   pythonCode.value = '';
@@ -312,7 +352,8 @@ function runCode() {
   setExecuting(true);
   execTime.value = null;
   try {
-    postWorkerMessage({ type: 'run', code: code.value });
+    const dataInputs = parseDataInputs();
+    postWorkerMessage({ type: 'run', code: code.value, dataInputs });
   } catch (err) {
     outputLines.value.push({ text: `❌ ${err.message}`, type: 'error' });
     setExecTime();
@@ -451,12 +492,18 @@ function copyPython() {
   }
 }
 
+function clearData() {
+  dataText.value = '';
+  showMessage('🗑 Données effacées');
+}
+
 function clearAll() {
   code.value = '';
   outputLines.value.splice(0);
   pythonCode.value = '';
+  dataText.value = '';
   activeTab.value = 'output';
-  sessionStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY);
   showMessage('🗑 Tout effacé');
 }
 
@@ -506,7 +553,15 @@ function submitInlineInput() {
   const value = inputValue.value;
   showInputModal.value = false;
   inputValue.value = '';
-  addOutput({ text: value + '\n' });
+  // Add the typed value to the data buffer for reuse
+  // (the interpreter already outputs the value via addOutput)
+  if (value.length > 0) {
+    if (dataText.value.length > 0 && !dataText.value.endsWith('\n')) {
+      dataText.value += '\n' + value;
+    } else {
+      dataText.value += value;
+    }
+  }
   if (pendingInputId.value && worker.value) {
     worker.value.postMessage({ 
       type: 'input_response', 

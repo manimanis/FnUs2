@@ -46,56 +46,6 @@ Début
 Fin`
   },
   {
-    name: 'Tri par sélection',
-    icon: '📊',
-    code: `Type tab = tableau de 10 entier
-
-Procédure Remplir(@t: tab, n: entier)
-Var i : entier
-Début
-  Pour i de 0 à n-1 Faire
-    t[i] ← aléa(10, 99)
-  Fin Pour
-Fin
-
-Procédure Afficher(t: tab, n: entier)
-Var i : entier
-Début
-  Pour i de 0 à n-1 Faire
-    Ecrire(t[i])
-  Fin Pour
-Fin
-
-Procédure Permuter(@a: entier, @b: entier)
-Début
-  tmp ← a ; a ← b ; b ← tmp
-Fin
-
-Procédure trierTableau(t: tab; n: entier)
-Var i, j, min, temp: entier
-Début
-  Pour i de 0 à n-2 Faire
-    min ← i
-    Pour j de i+1 à n-1 Faire
-      Si t[j] < t[min] Alors
-        min ← j
-      Fin Si
-    Fin Pour
-    Permuter(t[i], t[min])
-  Fin Pour
-Fin
-
-Var arr: tab; i: entier
-Début
-  Remplir(arr, 10)
-  Ecrire("Avant tri:")
-  Afficher(arr, 10)
-  trierTableau(arr, 10)
-  Ecrire("Après tri:")
-  Afficher(arr, 10)
-Fin`
-  },
-  {
     name: 'Recherche dichotomique',
     icon: '🔍',
     code: `Type tab = tableau de 10 entier
@@ -394,8 +344,9 @@ Procédure Afficher(t: tab, n: entier)
 Var i : entier
 Début
   Pour i de 0 à n-1 Faire
-    Ecrire(t[i])
+    Ecrire(t[i], fin=", ")
   Fin Pour
+  Ecrire()
 Fin
 
 Procédure trierBulles(@t: tab; n: entier)
@@ -426,9 +377,62 @@ Début
 Fin`
   },
   {
+    name: 'Tri par sélection',
+    icon: '📊',
+    code: `Type tab = tableau de 10 entier
+
+Procédure Remplir(@t: tab, n: entier)
+Var i : entier
+Début
+  Pour i de 0 à n-1 Faire
+    t[i] ← aléa(10, 99)
+  Fin Pour
+Fin
+
+Procédure Afficher(t: tab, n: entier)
+Var i : entier
+Début
+  Pour i de 0 à n-1 Faire
+    Ecrire(t[i], fin=", ")
+  Fin Pour
+  Ecrire()
+Fin
+
+Procédure Permuter(@a: entier, @b: entier)
+Début
+  tmp ← a ; a ← b ; b ← tmp
+Fin
+
+Procédure trierTableau(t: tab; n: entier)
+Var i, j, min, temp: entier
+Début
+  Pour i de 0 à n-2 Faire
+    min ← i
+    Pour j de i+1 à n-1 Faire
+      Si t[j] < t[min] Alors
+        min ← j
+      Fin Si
+    Fin Pour
+    Permuter(t[i], t[min])
+  Fin Pour
+Fin
+
+Var arr: tab; i: entier
+Début
+  Remplir(arr, 10)
+  Ecrire("Avant tri:")
+  Afficher(arr, 10)
+  trierTableau(arr, 10)
+  Ecrire("Après tri:")
+  Afficher(arr, 10)
+Fin`
+  },
+  {
     name: 'Suite arithmétique',
     icon: '📐',
-    code: `Fonction sommeArithmetique(a1, n, r: entier): entier
+    code: `Type tab = tableau de 5 entier
+
+Fonction sommeArithmetique(a1, n, r: entier): entier
 Var i, s: entier
 Début
   s ← 0

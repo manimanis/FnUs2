@@ -4,12 +4,13 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, toRaw } from 'vue';
-import { EditorView, keymap, lineNumbers } from '@codemirror/view';
-import { EditorState } from '@codemirror/state';
+import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, highlightSpecialChars, drawSelection, rectangularSelection, crosshairCursor } from '@codemirror/view';
+import { EditorState, Compartment } from '@codemirror/state';
 import { defaultKeymap, indentWithTab, indentLess, insertNewlineAndIndent } from '@codemirror/commands';
-import { StreamLanguage, syntaxHighlighting, HighlightStyle, indentUnit } from '@codemirror/language';
+import { StreamLanguage, syntaxHighlighting, HighlightStyle, indentUnit, bracketMatching, foldGutter, foldKeymap, codeFolding, foldService } from '@codemirror/language';
+import { lintGutter, lintKeymap } from '@codemirror/lint';
 
-import { closeBrackets, closeBracketsKeymap, autocompletion, snippetCompletion } from "@codemirror/autocomplete";
+import { closeBrackets, closeBracketsKeymap, autocompletion, completionKeymap, snippetCompletion } from "@codemirror/autocomplete";
 
 import { tags } from '@lezer/highlight';
 import { oneDark } from '@codemirror/theme-one-dark';
@@ -42,9 +43,9 @@ const pseudoCodeLanguage = StreamLanguage.define({
         'et', 'ou', 'non', 'mod', 'div'
       ]);
       const types = new Set(['entier', 'booleen', 'chaine', 'caractere']);
-      const builtins = new Set(['ecrire', 'lire', 
-      'long', 'sous_chaine', 'effacer', 'pos', 'valeur', 'convch', 'majus', 'chr', 'ord', 
-      'abs', 'sin', 'cos', 'tan', 'alea', 'aléa', 'arrondi', 'ent', 'racine']);
+      const builtins = new Set(['ecrire', 'lire',
+        'long', 'sous_chaine', 'effacer', 'pos', 'valeur', 'convch', 'majus', 'chr', 'ord',
+        'abs', 'sin', 'cos', 'tan', 'alea', 'aléa', 'arrondi', 'ent', 'racine']);
       if (types.has(word)) return 'type';
       if (keywords.has(word)) return 'keyword';
       if (builtins.has(word)) return 'builtin';
@@ -59,6 +60,85 @@ const pseudoCodeLanguage = StreamLanguage.define({
     return null;
   }
 });
+
+
+function customFoldService(state, lineStart) {
+  const doc = state.doc;
+  const line = doc.lineAt(lineStart);
+  const text = line.text;
+
+  // === Début ... Fin ===
+  if (/^\s*Début\s*$/i.test(text)) {
+    return findMatching(state, line, {
+      open: /^\s*Début\s*$/i,
+      close: /^\s*Fin\s*$/i
+    });
+  }
+
+  // === Si ... Fin Si ===
+  if (/^\s*Si\b/i.test(text)) {
+    return findMatching(state, line, {
+      open: /^\s*Si\b/i,
+      close: /^\s*Fin\s+Si\b/i
+    });
+  }
+
+  // === Pour ... Fin Pour ===
+  if (/^\s*Pour\b/i.test(text)) {
+    return findMatching(state, line, {
+      open: /^\s*Pour\b/i,
+      close: /^\s*Fin\s+Pour\b/i
+    });
+  }
+
+  // === Tant Que ... Fin Tant Que ===
+  if (/^\s*Tant\s+Que\b/i.test(text)) {
+    return findMatching(state, line, {
+      open: /^\s*Tant\s+Que\b/i,
+      close: /^\s*Fin\s+Tant\s+Que\b/i
+    });
+  }
+
+  // === Répéter ... Jusqu'à ===
+  if (/^\s*Répéter\b/i.test(text)) {
+    return findMatching(state, line, {
+      open: /^\s*Répéter\b/i,
+      close: /^\s*Jusqu'à\b/i,
+      nested: false
+    });
+  }
+
+  return null;
+}
+
+
+function findMatching(state, startLine, { open, close, nested = true }) {
+  const doc = state.doc;
+  let depth = 1;
+  let pos = startLine.to + 1;
+
+  while (pos <= doc.length) {
+    const line = doc.lineAt(pos);
+    const text = line.text;
+
+    if (nested && open.test(text)) {
+      depth++;
+    }
+
+    if (close.test(text)) {
+      depth--;
+
+      if (depth === 0) {
+        return { from: startLine.to, to: line.from };
+      }
+    }
+
+    pos = line.to + 1;
+  }
+
+  return null;
+}
+
 
 // Smart character replacement: define all symbol replacements in one place.
 // The last character of each key is the trigger key; the preceding part is
@@ -261,6 +341,38 @@ function createExtensions(dark) {
   const exts = [
     pseudoCodeLanguage,
     lineNumbers(),
+    highlightActiveLine(),
+    highlightActiveLineGutter(),
+    highlightSpecialChars(),
+    drawSelection(),
+    rectangularSelection(),
+    crosshairCursor(),
+    bracketMatching(),
+    codeFolding(),
+    foldGutter({
+      markerDOM(open) {
+        const el = document.createElement("div");
+
+        el.textContent = open ? "−" : "+";
+
+        Object.assign(el.style, {
+          width: "14px",
+          height: "14px",
+          border: "1px solid #aaa",
+          borderRadius: "2px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "11px",
+          fontWeight: "bold",
+          cursor: "pointer",
+        });
+
+        return el;
+      }
+    }),
+    foldService.of(customFoldService),
+    lintGutter(),
     EditorState.tabSize.of(2),
     indentUnit.of('  '),
     closeBrackets(),
@@ -268,6 +380,9 @@ function createExtensions(dark) {
       { key: 'Enter', run: indentAfterKeywords },
       ...defaultKeymap,
       ...closeBracketsKeymap,
+      ...foldKeymap,
+      ...lintKeymap,
+      ...completionKeymap,
       indentWithTab,
       { key: 'Backspace', run: indentLess },
     ]),
@@ -305,7 +420,7 @@ function buildView() {
     state,
     parent: editorContainer.value
   });
-  
+
   // Appliquer la taille de police
   if (view && props.fontSize) {
     const scroller = view.scrollDOM;
@@ -356,5 +471,13 @@ watch(() => props.fontSize, (newSize) => {
   height: calc(100vh - 92px);
   border-radius: 6px;
   overflow: auto;
+}
+
+@media (max-width: 1024px) {
+  .codemirror-wrapper {
+    height: 100%;
+    border-radius: 6px;
+    overflow: auto;
+  }
 }
 </style>

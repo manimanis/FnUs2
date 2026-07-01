@@ -12,7 +12,7 @@ let inputIdCounter = 0;
 let interpreter = null;
 
 self.onmessage = async (e) => {
-  const { type, code } = e.data;
+  const { type, code, dataInputs } = e.data;
 
   if (type === 'run') {
     try {
@@ -24,6 +24,13 @@ self.onmessage = async (e) => {
       const ast = parser.parse();
 
       interpreter = new Interpreter();
+
+      // Pre-populate input buffer with user-defined data
+      if (dataInputs && dataInputs.length > 0) {
+        for (const val of dataInputs) {
+          interpreter.addInput(val);
+        }
+      }
 
       interpreter.setOutputCallback((text) => {
         self.postMessage({ type: 'output', text });

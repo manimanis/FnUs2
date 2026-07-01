@@ -3,12 +3,12 @@
     <!-- Header visible on all pages, adapts per view -->
     <header v-if="$route.name === 'editor'">
       <h1>🔷 ALGO++</h1>
-      <span class="subtitle">Interpréteur & Convertisseur d'algorithmes pédagogiques</span>
+      <span class="subtitle">Interpréteur d'algorithmes pédagogique</span>
       
       <div class="header-group">
-        <button class="btn btn-primary" @click="runCode" title="Exécuter (Ctrl+Enter)">▶ Exécuter</button>
-        <button class="btn btn-warning" @click="stopExecution" title="Arrêter">⏹ Arrêter</button>
-        <button class="btn btn-success" @click="convertCode" title="Convertir en Python">🐍 Convertir</button>
+        <button class="btn btn-primary" @click="runCode" title="Exécuter (Ctrl+Enter)">▶ <span class="btn-text">Exécuter</span></button>
+        <button class="btn btn-warning" @click="stopExecution" title="Arrêter">⏹ <span class="btn-text">Arrêter</span></button>
+        <button class="btn btn-success" @click="convertCode" title="Convertir en Python">🐍 <span class="btn-text">Convertir</span></button>
       </div>
       
       <div class="header-group">
@@ -22,12 +22,12 @@
             @mouseleave="showSettingsMenu = false">
             <div class="dropdown-header">Affichage</div>
             <div class="dropdown-item" @click="changeFontSize(1)">
-              <span class="dropdown-icon">🔍+</span>
-              <span>Augmenter la taille de police</span>
+              <span class="dropdown-icon">🔍</span>
+              <span>Augmenter la police</span>
             </div>
             <div class="dropdown-item" @click="changeFontSize(-1)">
-              <span class="dropdown-icon">🔍-</span>
-              <span>Réduire la taille de police</span>
+              <span class="dropdown-icon">🔍</span>
+              <span>Réduire la police</span>
             </div>
             <div class="dropdown-header" style="margin-top: 8px;">Modes</div>
             <div class="dropdown-item" @click="togglePresentationMode">
@@ -56,7 +56,7 @@
       
       <div class="header-group header-group-left">
         <router-link to="/fonctions" class="nav-link" title="Référence des fonctions usuelles">📖 Fonctions</router-link>
-        <button class="btn btn-danger" @click="clearAll" title="Tout effacer">🗑 Effacer</button>
+        <button class="btn btn-danger" @click="clearAll" title="Tout effacer">🗑 <span class="btn-text">Effacer</span></button>
       </div>
     </header>
 
@@ -96,6 +96,7 @@ const editorViewRef = ref(null);
 const showSnackbar = ref(false);
 const snackbarMessage = ref('');
 let snackbarTimer = null;
+const snackbarQueue = ref([]);
 
 // Storage composables
 const { value: darkMode, load: loadTheme } = useStorage('algo-plus-plus-theme', true);
@@ -123,10 +124,24 @@ function clearAll() {
 }
 
 function showMessage(msg) {
-  snackbarMessage.value = msg;
+  snackbarQueue.value.push(msg);
+  if (!showSnackbar.value) {
+    processSnackbarQueue();
+  }
+}
+
+function processSnackbarQueue() {
+  if (snackbarQueue.value.length === 0) {
+    showSnackbar.value = false;
+    return;
+  }
+  snackbarMessage.value = snackbarQueue.value.shift();
   showSnackbar.value = true;
   if (snackbarTimer) clearTimeout(snackbarTimer);
-  snackbarTimer = setTimeout(() => { showSnackbar.value = false; }, 2500);
+  snackbarTimer = setTimeout(() => {
+    showSnackbar.value = false;
+    setTimeout(processSnackbarQueue, 200);
+  }, 2500);
 }
 
 const modularExampleIndex = ref(0);
@@ -173,11 +188,23 @@ onMounted(() => {
   document.documentElement.classList.toggle('light-mode', !darkMode.value);
   
   document.addEventListener('click', handleClickOutside);
+  
+  // Raccourci clavier global: Ctrl+Shift+Backspace pour tout effacer
+  document.addEventListener('keydown', handleGlobalShortcuts);
 });
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
+  document.removeEventListener('keydown', handleGlobalShortcuts);
 });
+
+function handleGlobalShortcuts(e) {
+  // Ctrl+Shift+Backspace: tout effacer
+  if (e.ctrlKey && e.shiftKey && e.key === 'Backspace') {
+    e.preventDefault();
+    clearAll();
+  }
+}
 </script>
 
 <style>

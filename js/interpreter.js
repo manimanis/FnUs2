@@ -254,6 +254,7 @@ class Interpreter {
             const idx = await this.evaluateExpression(target.index, env);
             arr[idx] = this.convertInput(inputStr, arr[idx]);
           }
+          this.addOutput(inputStr + '\n');
         }
         break;
       case 'If': await this.executeIf(stmt, env); break;
@@ -484,6 +485,10 @@ class Interpreter {
       } else {
         return Math.round(x);
       }
+    }
+    if (name === 'estnum') {
+      const x = await this.evaluateExpression(args[0], env);
+      return /^-?\d+(\.\d+)?$/.test(String(x));
     }
     if (name === 'alea' || name === 'aléa') {
       const deb = await this.evaluateExpression(args[0], env);
