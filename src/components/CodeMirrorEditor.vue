@@ -468,7 +468,6 @@ watch(() => props.fontSize, (newSize) => {
 
 <style scoped>
 .codemirror-wrapper {
-  height: calc(100vh - 92px);
   border-radius: 6px;
   overflow: auto;
 }
