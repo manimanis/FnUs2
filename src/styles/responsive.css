@@ -1,0 +1,438 @@
+/* ===== MOBILE RESPONSIVE STYLES ===== */
+
+/* Mobile First Approach */
+@media (max-width: 640px) {
+  /* App.vue - Header */
+  #app header {
+    padding: 12px !important;
+  }
+  
+  #app header h1 {
+    font-size: 1.2rem !important;
+  }
+  
+  #app header .subtitle {
+    font-size: 0.75rem !important;
+  }
+  
+  .header-group {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  
+  .header-group .btn {
+    padding: 6px 10px !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .btn-text {
+    display: none !important;
+  }
+  
+  .header-group-left {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .nav-link {
+    font-size: 0.7rem !important;
+    padding: 4px 8px !important;
+  }
+
+  /* EditorView.vue - Main Container */
+  .main-container {
+    flex-direction: column !important;
+  }
+  
+  .editor-panel,
+  .output-panel {
+    width: 100% !important;
+    height: auto !important;
+  }
+  
+  .editor-panel {
+    border-right: none !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+  
+  .panel-header {
+    padding: 10px 12px !important;
+    font-size: 0.85rem !important;
+  }
+  
+  .panel-header .header-actions {
+    gap: 4px !important;
+  }
+  
+  .btn-icon {
+    padding: 4px 6px !important;
+    font-size: 0.85rem !important;
+  }
+  
+  .resizer {
+    display: none !important;
+  }
+
+  /* Editor */
+  .editor-wrapper {
+    height: 300px !important;
+  }
+
+  /* Output */
+  .output-content {
+    padding: 12px !important;
+    font-size: 0.85rem !important;
+  }
+  
+  .output-line {
+    font-size: 0.85rem !important;
+    padding: 4px 0 !important;
+  }
+  
+  .tabs {
+    flex-wrap: wrap !important;
+  }
+  
+  .tab {
+    padding: 8px 12px !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* Data textarea */
+  .data-textarea {
+    font-size: 0.85rem !important;
+  }
+
+  /* Inline input */
+  .inline-input {
+    width: 100% !important;
+    margin-top: 8px !important;
+  }
+
+  /* FonctionsUsuelles.vue */
+  .layout {
+    flex-direction: column !important;
+  }
+  
+  .sidebar {
+    width: 100% !important;
+    max-height: 40vh !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+  
+  .sidebar-nav {
+    max-height: 20vh !important;
+  }
+  
+  .main {
+    padding: 20px 12px !important;
+    max-height: none !important;
+  }
+  
+  .home-heading {
+    font-size: 1.8rem !important;
+  }
+  
+  .cards-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  
+  .category-card {
+    padding: 16px !important;
+  }
+  
+  .syntax-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .demo-body {
+    padding: 12px !important;
+  }
+  
+  .control-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  
+  .control-input {
+    width: 100% !important;
+  }
+  
+  .range-input {
+    width: 100% !important;
+  }
+  
+  .result-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+  }
+  
+  .str-viz {
+    gap: 2px !important;
+  }
+  
+  .str-char {
+    width: 32px !important;
+    height: 40px !important;
+    font-size: 0.85rem !important;
+  }
+  
+  .ascii-table-scroll {
+    overflow-x: scroll !important;
+  }
+  
+  .fn-nav {
+    flex-direction: column !important;
+  }
+  
+  .fn-nav-btn {
+    width: 100% !important;
+  }
+
+  /* TemplatesModal.vue */
+  .modal-overlay {
+    padding: 10px !important;
+  }
+  
+  .modal-content {
+    max-height: 95vh !important;
+  }
+  
+  .modal-header {
+    padding: 16px !important;
+  }
+  
+  .modal-header h2 {
+    font-size: 1.1rem !important;
+  }
+  
+  .modal-body {
+    padding: 16px !important;
+  }
+  
+  .templates-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  
+  .template-card {
+    padding: 12px !important;
+  }
+  
+  .form-actions {
+    flex-direction: column !important;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    width: 100% !important;
+  }
+}
+
+/* Tablet Styles */
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* App.vue */
+  .header-group {
+    gap: 8px !important;
+  }
+  
+  .btn-text {
+    font-size: 0.8rem !important;
+  }
+
+  /* EditorView.vue */
+  .main-container {
+    flex-direction: row !important;
+  }
+  
+  .editor-panel {
+    width: 50% !important;
+  }
+  
+  .output-panel {
+    width: 50% !important;
+  }
+  
+  .panel-header {
+    padding: 12px 16px !important;
+  }
+  
+  .output-content {
+    padding: 16px !important;
+  }
+
+  /* FonctionsUsuelles.vue */
+  .sidebar {
+    width: 240px !important;
+  }
+  
+  .main {
+    padding: 30px 20px !important;
+  }
+  
+  .home-heading {
+    font-size: 2.2rem !important;
+  }
+  
+  .cards-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .syntax-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Desktop Styles */
+@media (min-width: 1025px) {
+  /* Hover effects only on desktop */
+  .btn:hover {
+    transform: translateY(-1px);
+  }
+  
+  .template-card:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Increase touch targets */
+  .btn,
+  .btn-icon,
+  .tab,
+  .nav-item,
+  .template-card {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+  
+  .btn-icon {
+    padding: 8px 10px !important;
+  }
+  
+  .tab {
+    padding: 10px 16px !important;
+  }
+  
+  /* Remove hover effects on touch */
+  .btn:hover,
+  .template-card:hover,
+  .nav-item:hover {
+    transform: none !important;
+  }
+  
+  /* Better scrolling */
+  .output-content,
+  .modal-body,
+  .sidebar-nav {
+    -webkit-overflow-scrolling: touch !important;
+    overflow-y: auto !important;
+  }
+  
+  /* Larger inputs */
+  .control-input,
+  .input-field,
+  .textarea-field {
+    min-height: 44px !important;
+    font-size: 1rem !important;
+  }
+}
+
+/* Landscape Mobile */
+@media (max-width: 640px) and (orientation: landscape) {
+  .main-container {
+    flex-direction: row !important;
+  }
+  
+  .editor-panel,
+  .output-panel {
+    width: 50% !important;
+    height: 100vh !important;
+  }
+  
+  .editor-wrapper {
+    height: 100% !important;
+  }
+  
+  .output-content {
+    max-height: calc(100vh - 100px) !important;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .header,
+  .tabs,
+  .resizer,
+  .btn-icon,
+  .dropdown {
+    display: none !important;
+  }
+  
+  .main-container {
+    display: block !important;
+  }
+  
+  .editor-panel,
+  .output-panel {
+    width: 100% !important;
+    border: none !important;
+  }
+}
+
+/* High DPI Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Sharper borders and text */
+  .btn,
+  .template-card,
+  .syntax-panel {
+    border-width: 0.5px !important;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Dark Mode (default) - already handled by CSS variables */
+/* Light mode adjustments */
+.light-mode {
+  /* Additional light mode specific adjustments */
+}
+
+.light-mode .output-line {
+  text-shadow: none !important;
+}
+
+/* Focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important;
+}
+
+/* Skip to content for accessibility */
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--accent);
+  color: white;
+  padding: 8px;
+  text-decoration: none;
+  z-index: 100;
+}
+
+.skip-to-content:focus {
+  top: 0;
+}

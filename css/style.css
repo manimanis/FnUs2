@@ -579,47 +579,79 @@ header .dropdown .btn {
 
 /* === SYNTAX HIGHLIGHTING === */
 .syntax-line {
-    display: block;
-    padding: 0 4px;
-    white-space: pre;
+  display: block;
+  padding: 0 4px;
+  white-space: pre;
 }
 
 .syntax-line:hover {
-    background: rgba(124, 77, 255, 0.05);
+  background: rgba(124, 77, 255, 0.05);
 }
 
+/* Classes used in FonctionsUsuelles.vue */
+.kw {
+  color: var(--keyword);
+  font-weight: bold;
+}
+
+.fn-c {
+  color: var(--function);
+}
+
+.str-c {
+  color: var(--string);
+}
+
+.num-c {
+  color: var(--number);
+}
+
+.cmt {
+  color: var(--comment);
+  font-style: italic;
+}
+
+.op {
+  color: var(--operator);
+}
+
+.var {
+  color: var(--variable);
+}
+
+/* Classes used in CodeMirrorEditor.vue */
 .syntax-line .kw {
-    color: var(--keyword);
-    font-weight: bold;
+  color: var(--keyword);
+  font-weight: bold;
 }
 
 .syntax-line .type {
-    color: var(--type);
+  color: var(--type);
 }
 
 .syntax-line .str {
-    color: var(--string);
+  color: var(--string);
 }
 
 .syntax-line .num {
-    color: var(--number);
+  color: var(--number);
 }
 
 .syntax-line .cmt {
-    color: var(--comment);
-    font-style: italic;
+  color: var(--comment);
+  font-style: italic;
 }
 
 .syntax-line .op {
-    color: var(--operator);
+  color: var(--operator);
 }
 
 .syntax-line .fn {
-    color: var(--function);
+  color: var(--function);
 }
 
 .syntax-line .var {
-    color: var(--variable);
+  color: var(--variable);
 }
 
 /* === RESPONSIVE === */
@@ -942,4 +974,58 @@ header .dropdown .btn {
 
 .data-textarea::placeholder {
     color: var(--comment);
+}
+
+/* === TOOLTIPS === */
+.algo-tooltip {
+    position: fixed;
+    z-index: 10000;
+    background: var(--bg-card, #27273a);
+    color: var(--text, #e0e0e0);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    max-width: 320px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border, #3d3d5c);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    font-family: inherit;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+.algo-tooltip::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 20px;
+    width: 12px;
+    height: 12px;
+    background: var(--bg-card, #27273a);
+    border-left: 1px solid var(--border, #3d3d5c);
+    border-top: 1px solid var(--border, #3d3d5c);
+    transform: rotate(45deg);
+}
+
+.tooltip-type {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    font-weight: 700;
+}
+
+.tooltip-type.keyword {
+    color: var(--keyword, #bb86fc);
+}
+
+.tooltip-type.function {
+    color: var(--function, #82aaff);
+}
+
+.tooltip-text {
+    color: var(--text, #e0e0e0);
+    line-height: 1.5;
 }

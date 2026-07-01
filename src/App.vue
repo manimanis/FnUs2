@@ -50,6 +50,11 @@
               <span class="dropdown-icon">{{ example.icon }}</span>
               <span>{{ example.name }}</span>
             </div>
+            <div class="dropdown-header" style="margin-top: 8px;">Templates</div>
+            <div class="dropdown-item" @click="showTemplatesModal = true">
+              <span class="dropdown-icon">📝</span>
+              <span>Gérer les templates</span>
+            </div>
           </div>
         </div>
       </div>
@@ -79,6 +84,9 @@
       @message="showMessage"
     />
 
+    <!-- Modal Templates -->
+    <TemplatesModal v-if="showTemplatesModal" @close="showTemplatesModal = false" @select="loadTemplate" />
+
     <div class="snackbar" :class="{ show: showSnackbar }">{{ snackbarMessage }}</div>
   </div>
 </template>
@@ -88,6 +96,7 @@ import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStorage } from './composables/useStorage.js';
 import { modularExamples } from './data/modularExamples.js';
+import TemplatesModal from './components/TemplatesModal.vue';
 
 const router = useRouter();
 
@@ -102,6 +111,7 @@ const snackbarQueue = ref([]);
 const { value: darkMode, load: loadTheme } = useStorage('algo-plus-plus-theme', true);
 const showModularMenu = ref(false);
 const showSettingsMenu = ref(false);
+const showTemplatesModal = ref(false);
 
 function runCode() {
   const el = document.querySelector('.main-container');
@@ -181,6 +191,14 @@ function togglePresentationMode() {
 function toggleFullscreen() {
   window.dispatchEvent(new CustomEvent('editor-toggle-fullscreen'));
   showSettingsMenu.value = false;
+}
+
+function loadTemplate(template) {
+  if (editorViewRef.value) {
+    const event = new CustomEvent('editor-set-code', { detail: { code: template.code } });
+    window.dispatchEvent(event);
+    showMessage(`📝 Template "${template.name}" chargé !`);
+  }
 }
 
 onMounted(() => {

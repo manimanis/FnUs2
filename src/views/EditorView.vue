@@ -12,7 +12,9 @@
       </div>
       <div class="editor-wrapper">
         <CodeMirrorEditor 
-          v-model="code" 
+          ref="editorRef"
+          :modelValue="code"
+          @update:modelValue="onEditorUpdate"
           placeholder="Écrivez votre algorithme ici..." 
           :dark="darkMode"
           :fontSize="fontSize"
@@ -115,6 +117,8 @@ import PythonHighlight from '../components/PythonHighlight.vue';
 import { useStorage } from '../composables/useStorage.js';
 import { useWorker } from '../composables/useWorker.js';
 import { useKeyboardShortcuts, createShortcut, createKeyShortcut } from '../composables/useKeyboardShortcuts.js';
+import { useAutoSave } from '../composables/useAutoSave.js';
+import { useMobile } from '../composables/useMobile.js';
 
 const props = defineProps({
   darkMode: {
@@ -140,6 +144,9 @@ const { value: splitView, load: loadSplitView } = useStorage('algo-plus-plus-spl
 const { value: editorWidth, load: loadEditorWidth } = useStorage('algo-plus-plus-editor-width', 50);
 const { value: editorHeight, load: loadEditorHeight } = useStorage('algo-plus-plus-editor-height', 50);
 
+// Mobile detection
+const { isMobile, isTablet, isDesktop } = useMobile();
+
 // Refs
 const pythonElement = ref(null);
 const outputContainer = ref(null);
@@ -148,6 +155,7 @@ const isResizing = ref(false);
 const presentationMode = ref(false);
 const isFullscreen = ref(false);
 const isHorizontalSplit = ref(false);
+const editorRef = ref(null);
 
 // Input inline state
 const showInputModal = ref(false);
@@ -192,11 +200,6 @@ Début
   Ecrire("La somme est:", s)
 Fin`);
 
-// Auto-save watcher
-watch(code, () => {
-  saveState();
-}, { deep: true });
-
 const STORAGE_KEY = 'algo-plus-plus-state';
 
 function showMessage(msg) {
@@ -213,6 +216,7 @@ function addOutput(outObj) {
   scrollOutput();
 }
 
+// Sauvegarde manuelle seulement (pas de watcher automatique pour ne pas interférer avec CodeMirror undo/redo)
 function saveState() {
   const state = {
     code: code.value,
@@ -252,7 +256,19 @@ function handleEditorRun() { runCode(); }
 function handleEditorStop() { stopExecution(); }
 function handleEditorConvert() { convertCode(); }
 function handleEditorClear() { clearAll(); }
+function onEditorUpdate(newValue) {
+  // Mettre à jour le code seulement si ce n'est pas un undo/redo
+  // (évite les boucles de synchronisation)
+  if (newValue !== code.value) {
+    code.value = newValue;
+  }
+}
+
 function handleEditorSetCode(e) {
+  // Mettre à jour directement l'éditeur via la méthode exposée
+  if (editorRef.value && editorRef.value.setContent) {
+    editorRef.value.setContent(e.detail.code);
+  }
   code.value = e.detail.code;
   outputLines.value.splice(0);
   pythonCode.value = '';
@@ -263,6 +279,19 @@ function handleChangeFontSize(e) {
     changeFontSize(e.detail.delta);
   }
 }
+
+// Raccourcis clavier - appel UNIQUE (dans le setup, via onMounted interne à useKeyboardShortcuts)
+useKeyboardShortcuts([
+  createShortcut(true, '=', changeFontSize.bind(null, 1)),
+  createShortcut(true, '+', changeFontSize.bind(null, 1)),
+  createShortcut(true, '-', changeFontSize.bind(null, -1)),
+  createKeyShortcut('F11', toggleFullscreen),
+  createShortcut(true, 'p', togglePresentationMode),
+  createShortcut(true, 's', () => {
+    saveState();
+    showMessage('✅ État sauvegardé');
+  })
+]);
 
 onMounted(() => {
   loadState();
@@ -312,19 +341,6 @@ onMounted(() => {
   window.addEventListener('editor-change-font-size', handleChangeFontSize);
   window.addEventListener('editor-toggle-presentation', togglePresentationMode);
   window.addEventListener('editor-toggle-fullscreen', toggleFullscreen);
-  
-  // Raccourcis clavier
-  useKeyboardShortcuts([
-    createShortcut(true, '=', changeFontSize.bind(null, 1)),
-    createShortcut(true, '+', changeFontSize.bind(null, 1)),
-    createShortcut(true, '-', changeFontSize.bind(null, -1)),
-    createKeyShortcut('F11', toggleFullscreen),
-    createShortcut(true, 'p', togglePresentationMode),
-    createShortcut(true, 's', () => {
-      saveState();
-      showMessage('✅ État sauvegardé');
-    })
-  ]);
   
   document.addEventListener('fullscreenchange', handleFullscreenChange);
 });
@@ -503,11 +519,6 @@ function exportOutput() {
 // Export PDF (simplifié - nécessite une librairie comme jsPDF pour une vraie implémentation)
 function exportPDF() {
   showMessage('⚠️ Export PDF nécessite une librairie externe (jsPDF)');
-  // Pour une implémentation complète, installer jsPDF et décommenter:
-  // const { jsPDF } = require('jspdf');
-  // const doc = new jsPDF();
-  // outputLines.value.forEach((line, i) => doc.text(line.text, 10, 10 + i * 7));
-  // doc.save(`sortie-${Date.now()}.pdf`);
 }
 
 // Capture d'écran
@@ -531,6 +542,10 @@ function clearData() {
 }
 
 function clearAll() {
+  // Utiliser setContent pour effacer l'éditeur sans perdre l'historique
+  if (editorRef.value && editorRef.value.setContent) {
+    editorRef.value.setContent('');
+  }
   code.value = '';
   outputLines.value.splice(0);
   pythonCode.value = '';
@@ -586,8 +601,6 @@ function submitInlineInput() {
   const value = inputValue.value;
   showInputModal.value = false;
   inputValue.value = '';
-  // Add the typed value to the data buffer for reuse
-  // (the interpreter already outputs the value via addOutput)
   if (value.length > 0) {
     if (dataText.value.length > 0 && !dataText.value.endsWith('\n')) {
       dataText.value += '\n' + value;

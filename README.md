@@ -1,4 +1,4 @@
-Uncaught (in promise) ReferenceError: updateSplitMode is not defined# 🔷 ALGO++
+# 🔷 ALGO++
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![Vue](https://img.shields.io/badge/Vue-3.5-green)
@@ -36,6 +36,36 @@ Uncaught (in promise) ReferenceError: updateSplitMode is not defined# 🔷 ALGO+
 - **▶️ Exécution d'algorithmes** via un interpréteur intégré (Web Worker)
 - **🐍 Conversion en Python** d'un algorithme vers du code Python fonctionnel
 - **📦 12 exemples modulaires** : Fibonacci, PGCD/PPCM, tri par sélection, tri à bulles, recherche dichotomique, statistiques, nombres premiers, manipulation de chaînes, exponentiation rapide, suite arithmétique, jeu de devinette, calculatrice
+
+### 💾 Gestion de l'historique et sauvegarde
+
+- **💾 Sauvegarde automatique** avec historique complet (undo/redo)
+- **↩️ Annuler/Rétablir** (Ctrl+Z / Ctrl+Y) jusqu'à 50 modifications
+- **📜 Historique persistant** dans localStorage
+- **🔄 Navigation dans l'historique** avec boutons dédiés
+
+### 📚 Documentation interactive
+
+- **💡 Tooltips contextuels** pour tous les mots-clés ALGO++
+- **⚡ Aide intégrée** sur les fonctions (Ent, Racine, aléa, long, etc.)
+- **🔍 Exemples d'utilisation** dans les tooltips
+- **📖 Documentation à la volée** pendant l'écriture du code
+
+### 📝 Templates personnalisés
+
+- **📋 8 templates par défaut** : Structure de base, Fonction, Procédure, Boucles, Conditions, Tableaux, Entrée/Sortie
+- **➕ Création de templates personnalisés** avec nom, icône et description
+- **📝 Éditeur de templates** intégré
+- **🗂 Gestion complète** : créer, modifier, dupliquer, supprimer
+- **💾 Sauvegarde** des templates personnalisés dans localStorage
+
+### 📱 Interface responsive
+
+- **📱 Mobile-first design** adapté à tous les écrans
+- **📲 Breakpoints optimisés** : Mobile (<640px), Tablette (641-1024px), Desktop (>1024px)
+- **👆 Touch-friendly** : zones tactiles agrandies (44px minimum)
+- **🔄 Orientation adaptative** : portrait et landscape
+- **♿ Accessibilité** : focus visible, reduced motion, skip links
 
 ### 🎨 Interface et expérience utilisateur
 
@@ -94,9 +124,13 @@ ALGO++ utilise un langage de type pseudo-code français, pédagogique et simple,
 ### Démarrage rapide
 
 1. **Écrivez** votre algorithme dans l'éditeur (ou chargez un exemple depuis le menu **📦 Modulaire**)
-2. **Exécutez** avec le bouton **▶ Exécuter** ou le raccourci `Ctrl+Enter`
-3. Consultez les résultats dans le panneau de **🖥 Sortie**
-4. Basculez vers l'onglet **🐍 Python** pour voir et copier le code Python généré
+2. **Utilisez les tooltips** : survolez les mots-clés ALGO++ dans l'éditeur pour voir l'aide contextuelle (ex: `Var`, `Si`, `Tant Que`, `Ent()`, `Racine()`, etc.)
+3. **Consultez la référence** : visitez la page **📖 Fonctions** pour des exemples interactifs de toutes les fonctions
+4. **Exécutez** avec le bouton **▶ Exécuter** ou le raccourci `Ctrl+Enter`
+5. Consultez les résultats dans le panneau de **🖥 Sortie**
+6. Basculez vers l'onglet **🐍 Python** pour voir et copier le code Python généré
+7. **Gérez votre historique** avec les boutons **↩️ Annuler** et **↪️ Rétablir** (Ctrl+Z / Ctrl+Y)
+8. **Créez des templates** depuis le menu **📝 Templates** pour réutiliser vos structures favorites
 
 ### Exemple
 
@@ -123,6 +157,10 @@ Fin
 | `F11`               | Plein écran                   |
 | `Ctrl + Plus`       | Augmenter la taille de police |
 | `Ctrl + Moins`      | Diminuer la taille de police  |
+| `Ctrl + Z`          | Annuler (undo)                |
+| `Ctrl + Y`          | Rétablir (redo)               |
+| `Ctrl + S`          | Sauvegarder l'état            |
+| `Ctrl + Shift + Backspace` | Tout effacer          |
 
 ---
 
@@ -374,7 +412,7 @@ Ce projet est à titre éducatif, développé dans le cadre de l'enseignement de
 
 ## 🙏 Remerciements
 
-- Inspiré par les pseudo-codes utilisés dans l'enseignement de l'algorithmique en France
+- Inspiré par les pseudo-codes utilisés dans l'enseignement de l'algorithmique en Tunisie
 - Construit avec des outils open-source exceptionnels : Vue.js, Vite, CodeMirror, Vitest
 - Merci à tous les contributeurs qui améliorent ce projet
 

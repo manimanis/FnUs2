@@ -15,6 +15,7 @@ import { closeBrackets, closeBracketsKeymap, autocompletion, completionKeymap, s
 import { tags } from '@lezer/highlight';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { snippets, mySnippetsCompletion } from '../codemirror/snippets.js';
+import { useTooltips } from '../composables/useTooltips.js';
 
 const pseudoCodeLanguage = StreamLanguage.define({
   name: 'pseudocode',
@@ -51,7 +52,7 @@ const pseudoCodeLanguage = StreamLanguage.define({
       if (builtins.has(word)) return 'builtin';
       return 'variable';
     }
-    const operators = ['←', '<-', '!=', '≠', '<=', '>=', '≤', '≥', '=', '<', '>', '+', '-', '*', '/', ';'];
+    const operators = ['←', '∈', '<-', '!=', '≠', '<=', '>=', '≤', '≥', '=', '<', '>', '+', '-', '*', '/', ';'];
     operators.forEach(op => {
       if (stream.match(op)) return 'operator';
     });
@@ -168,7 +169,7 @@ function handleDigraph(key) {
 
     for (const [prefix, replacement] of Object.entries(pairs)) {
       const prefixLen = prefix.length;
-      if (pos >= prefixLen && state.sliceDoc(pos - prefixLen, pos) === prefix) {
+      if (pos >= prefixLen && state.doc.slice(pos - prefixLen, pos).toString() === prefix) {
         dispatch(state.update({
           changes: { from: pos - prefixLen, to: pos, insert: replacement },
           selection: { anchor: pos }
@@ -204,10 +205,19 @@ const emit = defineEmits(['update:modelValue']);
 
 const editorContainer = ref(null);
 let view = null;
+let lastEmittedValue = props.modelValue; // Tracker la dernière valeur émise
+
+// Tooltips integration
+const { showTooltip, hideTooltip, getTooltip } = useTooltips();
 
 const updateListener = EditorView.updateListener.of((update) => {
   if (update.docChanged) {
-    emit('update:modelValue', update.state.doc.toString());
+    const newValue = update.state.doc.toString();
+    // N'émettre que si la valeur a vraiment changé (pas juste undo/redo interne)
+    if (newValue !== lastEmittedValue) {
+      lastEmittedValue = newValue;
+      emit('update:modelValue', newValue);
+    }
   }
 });
 
@@ -412,6 +422,7 @@ function buildView() {
   if (view) {
     view.destroy();
   }
+  lastEmittedValue = props.modelValue; // Réinitialiser le tracker
   const state = EditorState.create({
     doc: props.modelValue,
     extensions: createExtensions(props.dark)
@@ -430,18 +441,10 @@ function buildView() {
   }
 }
 
-onMounted(() => {
-  buildView();
-});
-
-onUnmounted(() => {
-  if (view) {
-    view.destroy();
-  }
-});
-
-watch(() => props.modelValue, (newValue) => {
+// Méthode exposée pour mettre à jour le contenu de l'extérieur
+function setContent(newValue) {
   if (view && newValue !== view.state.doc.toString()) {
+    lastEmittedValue = newValue; // Mettre à jour le tracker AVANT le dispatch
     view.dispatch({
       changes: {
         from: 0,
@@ -449,6 +452,102 @@ watch(() => props.modelValue, (newValue) => {
         insert: newValue
       }
     });
+  }
+}
+
+// Exposer la méthode
+defineExpose({
+  setContent
+});
+
+
+// Tooltip handling on mouse move
+function handleMouseMove(event) {
+  if (!view) return;
+  
+  const { state } = view;
+  const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
+  
+  if (pos === null) {
+    hideTooltip();
+    return;
+  }
+  
+  // Find the word at the current position
+  const wordRange = findWordAt(state, pos);
+  if (!wordRange) {
+    hideTooltip();
+    return;
+  }
+  
+  const word = state.doc.slice(wordRange.from, wordRange.to).toString();
+  const tooltip = getTooltip(word);
+  
+  if (tooltip) {
+    showTooltip(word, event);
+  } else {
+    hideTooltip();
+  }
+}
+
+function findWordAt(state, pos) {
+  const doc = state.doc;
+  const line = doc.lineAt(pos);
+  
+  // Check if we're on a word character
+  const charAtPos = doc.slice(pos, pos + 1).toString();
+  if (!/[\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ]/.test(charAtPos)) {
+    return null;
+  }
+  
+  // Find the start of the word
+  let start = pos;
+  while (start > line.from) {
+    const char = doc.slice(start - 1, start).toString();
+    if (!/[\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ]/.test(char)) {
+      break;
+    }
+    start--;
+  }
+  
+  // Find the end of the word
+  let end = pos;
+  while (end < line.to) {
+    const char = doc.slice(end, end + 1).toString();
+    if (!/[\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ]/.test(char)) {
+      break;
+    }
+    end++;
+  }
+  
+  // Check if it's a valid word (at least 2 characters)
+  if (end - start < 2) {
+    return null;
+  }
+  
+  return { from: start, to: end };
+}
+
+onMounted(() => {
+  buildView();
+  
+  // Add mouse move listener for tooltips
+  if (editorContainer.value) {
+    editorContainer.value.addEventListener('mousemove', handleMouseMove);
+    editorContainer.value.addEventListener('mouseleave', hideTooltip);
+  }
+});
+
+onUnmounted(() => {
+  if (view) {
+    view.destroy();
+  }
+  hideTooltip();
+  
+  // Remove mouse move listeners
+  if (editorContainer.value) {
+    editorContainer.value.removeEventListener('mousemove', handleMouseMove);
+    editorContainer.value.removeEventListener('mouseleave', hideTooltip);
   }
 });
 
@@ -464,6 +563,7 @@ watch(() => props.fontSize, (newSize) => {
     }
   }
 });
+
 </script>
 
 <style scoped>

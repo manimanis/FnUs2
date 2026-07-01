@@ -2,6 +2,17 @@ import { onMounted, onUnmounted } from 'vue';
 
 export function useKeyboardShortcuts(handlers) {
   const handleKeydown = (e) => {
+    // Ignorer les événements qui viennent de l'éditeur CodeMirror
+    // pour ne pas interférer avec ses raccourcis natifs (Ctrl+Z, Ctrl+Y, etc.)
+    const target = e.target;
+    if (target && (
+      target.closest('.cm-content') || 
+      target.closest('.codemirror-wrapper') ||
+      target.closest('.CodeMirror')
+    )) {
+      return;
+    }
+
     for (const handler of handlers) {
       if (handler.shouldHandle(e)) {
         e.preventDefault();
