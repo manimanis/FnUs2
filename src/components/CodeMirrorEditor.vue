@@ -6,7 +6,7 @@
 import { ref, onMounted, onUnmounted, watch, toRaw } from 'vue';
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, highlightSpecialChars, drawSelection, rectangularSelection, crosshairCursor } from '@codemirror/view';
 import { EditorState, Compartment } from '@codemirror/state';
-import { defaultKeymap, indentWithTab, indentLess, insertNewlineAndIndent } from '@codemirror/commands';
+import { defaultKeymap, indentWithTab, indentLess, insertNewlineAndIndent, history, historyKeymap } from '@codemirror/commands';
 import { StreamLanguage, syntaxHighlighting, HighlightStyle, indentUnit, bracketMatching, foldGutter, foldKeymap, codeFolding, foldService } from '@codemirror/language';
 import { lintGutter, lintKeymap } from '@codemirror/lint';
 
@@ -386,9 +386,14 @@ function createExtensions(dark) {
     EditorState.tabSize.of(2),
     indentUnit.of('  '),
     closeBrackets(),
+    history({
+      minDepth: 300,
+      newGroupDelay: 500
+    }),
     keymap.of([
       { key: 'Enter', run: indentAfterKeywords },
       ...defaultKeymap,
+      ...historyKeymap,
       ...closeBracketsKeymap,
       ...foldKeymap,
       ...lintKeymap,
@@ -464,25 +469,25 @@ defineExpose({
 // Tooltip handling on mouse move
 function handleMouseMove(event) {
   if (!view) return;
-  
+
   const { state } = view;
   const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
-  
+
   if (pos === null) {
     hideTooltip();
     return;
   }
-  
+
   // Find the word at the current position
   const wordRange = findWordAt(state, pos);
   if (!wordRange) {
     hideTooltip();
     return;
   }
-  
+
   const word = state.doc.slice(wordRange.from, wordRange.to).toString();
   const tooltip = getTooltip(word);
-  
+
   if (tooltip) {
     showTooltip(word, event);
   } else {
@@ -493,13 +498,13 @@ function handleMouseMove(event) {
 function findWordAt(state, pos) {
   const doc = state.doc;
   const line = doc.lineAt(pos);
-  
+
   // Check if we're on a word character
   const charAtPos = doc.slice(pos, pos + 1).toString();
   if (!/[\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ]/.test(charAtPos)) {
     return null;
   }
-  
+
   // Find the start of the word
   let start = pos;
   while (start > line.from) {
@@ -509,7 +514,7 @@ function findWordAt(state, pos) {
     }
     start--;
   }
-  
+
   // Find the end of the word
   let end = pos;
   while (end < line.to) {
@@ -519,18 +524,18 @@ function findWordAt(state, pos) {
     }
     end++;
   }
-  
+
   // Check if it's a valid word (at least 2 characters)
   if (end - start < 2) {
     return null;
   }
-  
+
   return { from: start, to: end };
 }
 
 onMounted(() => {
   buildView();
-  
+
   // Add mouse move listener for tooltips
   if (editorContainer.value) {
     editorContainer.value.addEventListener('mousemove', handleMouseMove);
@@ -543,7 +548,7 @@ onUnmounted(() => {
     view.destroy();
   }
   hideTooltip();
-  
+
   // Remove mouse move listeners
   if (editorContainer.value) {
     editorContainer.value.removeEventListener('mousemove', handleMouseMove);
