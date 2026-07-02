@@ -573,6 +573,13 @@ watch(() => props.fontSize, (newSize) => {
   }
 });
 
+// Watch for external changes to modelValue (e.g., when loading from localStorage)
+watch(() => props.modelValue, (newValue) => {
+  if (view && newValue !== undefined && newValue !== view.state.doc.toString()) {
+    setContent(newValue);
+  }
+});
+
 </script>
 
 <style scoped>

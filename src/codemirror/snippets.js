@@ -4,6 +4,15 @@ import { snippetCompletion } from "@codemirror/autocomplete";
 
 export const snippets = [
   snippetCompletion(
+    `Type \${1:tab} = tableau de \${2:20} \${3:entier}`,
+    {
+      label: "type tableau",
+      type: "keyword",
+      info: "Déclaration d'un tableau"
+    }
+  ),
+
+  snippetCompletion(
     `Si \${1:a > 0} Alors
   \${2}
 Fin Si`,
@@ -104,15 +113,203 @@ Fin`,
       type: "keyword"
     }
   ),
-];
 
-const keywords = [
-  'Début', 'Debut', 'Fin', 'Si', 'Alors', 'Sinon',
-  'Tant', 'Que', 'Faire', 'Pour', 'Pas',
-  'Répéter', 'Repeter', 'Jusqu\'à', 'Jusqu_a',
-  'Fonction', 'Fonction', 'Procédure', 'Procedure', 'Retourner',
-  'Var', 'Type', 'De',
-  'Et', 'Ou', 'Non', 'Mod', 'Div'
+  snippetCompletion(
+    `Procédure Saisir(@n: entier)
+Début
+  Répéter
+    Ecrire("Entrez un entier : ");
+    Lire(n);
+  Jusqu'à n > 0
+Fin`,
+    {
+      label: "saisir",
+      type: "keyword",
+      info: "Saisir un entier"
+    }
+  ),
+
+  snippetCompletion(
+    `Procédure Remplir(@t: tab, n: entier)
+Var i: entier
+Début
+  Pour i de 0 à n-1 Faire
+    Ecrire("t[", i, "] = ");
+    Lire(t[i]);
+  Fin Pour
+Fin`,
+    {
+      label: "remplir",
+      type: "keyword",
+      info: "Remplir un tableau"
+    }
+  ),
+
+  snippetCompletion(
+    `Procédure Afficher(t: tab, n: entier)
+Var i: entier
+Début
+  Pour i de 0 à n-1 Faire
+    Ecrire(t[i], fin=" ");
+  Fin Pour
+Fin`,
+    {
+      label: "afficher",
+      type: "keyword",
+      info: "Afficher un tableau"
+    }
+  ),
+
+  snippetCompletion(
+    `Fonction Premier(n: entier): booléen
+Var i: entier
+    test: booléen
+Début
+  test ← n >= 2
+  i ← 2
+  Tant Que i * i ≤ n Et test Faire
+    test ← n mod i ≠ 0
+    i ← i + 1
+  Fin Tant Que
+  Retourner test
+Fin`,
+    {
+      label: "premier",
+      type: "keyword",
+      info: "Vérifier si un nombre est premier"
+    }
+  ),
+
+  snippetCompletion(
+    `Fonction SemiPremier(n: entier): booléen
+Var i: entier
+    test: booléen
+Début
+  test ← Faux
+  i ← 2
+  Tant Que i * i ≤ n Et non test Faire
+    test ← n mod i = 0 et Premier(i) et Premier(n div i)
+    i ← i + 1
+  Fin Tant Que
+  Retourner test
+Fin`,
+    {
+      label: "semipremier",
+      type: "keyword",
+      info: "Vérifier si un nombre est semi-premier"
+    }
+  ),
+
+  snippetCompletion(
+    `Fonction Rechercher(v: entier, t: tab, n: entier): entier
+Var i, p: entier
+    test: booléen
+Début
+  p ← -1
+  i ← 0
+  Tant Que i < n Et p = -1 Faire
+    Si t[i] = v Alors
+      p ← i
+    Fin Si
+    i ← i + 1
+  Fin Tant Que
+  Retourner p
+Fin`,
+    {
+      label: "rechercher",
+      type: "keyword",
+      info: "Rechercher un élément dans un tableau"
+    }
+  ),
+
+  snippetCompletion(
+    `Fonction Somme(t: tab, n: entier): entier
+Var i, s: entier
+Début
+  s ← 0
+  Pour i de 0 à n-1 Faire
+    s ← s + t[i]
+  Fin Pour
+  Retourner s
+Fin`,
+    {
+      label: "somme",
+      type: "keyword",
+      info: "Calculer la somme des éléments d'un tableau"
+    }
+  ),
+
+  snippetCompletion(
+    `Procédure TriBulles(@t: tab, n: entier)
+Var i, j, temp: entier
+    trié: booléen
+Début
+  Répéter
+    trié ← Vrai
+    Pour i de 0 à n-2-i Faire
+      Si t[i] > t[i+1] Alors
+        temp ← t[i]
+        t[i] ← t[i+1]
+        t[i+1] ← temp
+        trié ← Faux
+      Fin Si
+    Fin Pour
+  Jusqu'à trié
+Fin`,
+    {
+      label: "tribulles",
+      type: "keyword",
+      info: "Trier un tableau par méthode du tri à bulles"
+    }
+  ),
+
+  snippetCompletion(
+    `Procédure TriSelection(@t: tab, n: entier)
+Var i, j, min, temp: entier
+Début
+  Pour i de 0 à n-2 Faire
+    min ← i
+    Pour j de i+1 à n-1 Faire
+      Si t[j] < t[min] Alors
+        min ← j
+      Fin Si
+    Fin Pour
+    Si min ≠ i Alors
+      temp ← t[i]
+      t[i] ← t[min]
+      t[min] ← temp
+    Fin Si
+  Fin Pour
+Fin`,
+    {
+      label: "triselection",
+      type: "keyword",
+      info: "Trier un tableau par méthode du tri par sélection"
+    }
+  ),
+
+  snippetCompletion(
+    `Procédure TriInsertion(@t: tab, n: entier)
+Var i, j, temp: entier
+    trié: booléen
+Début
+  Pour i de 1 à n-1 Faire
+    temp ← t[i]
+    j ← i - 1
+    Tant Que j >= 0 Et t[j] > temp Faire
+      t[j+1] ← t[j]
+      j ← j - 1
+    Fin Tant Que
+    t[j+1] ← temp
+  Fin Pour
+Fin`,
+    {
+      label: "triinsertion",
+      type: "keyword",
+      info: "Trier un tableau par méthode du tri par insertion"
+    }
+  ),
+
 ];
 
 const builtInFunctions = [
@@ -134,11 +331,6 @@ export function mySnippetsCompletion(context) {
   // fusion snippets + mots clés
   const options = [
     ...snippets,
-    ...keywords.map(keyword => ({
-      label: keyword,
-      type: "keyword",
-      info: "Mot-clé"
-    })),
     ...builtInFunctions.map(func => ({
       label: func,
       type: "function",

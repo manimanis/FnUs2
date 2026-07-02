@@ -298,11 +298,22 @@ class Parser {
             }
             if (this.peek().type === 'DELIMITER' && this.peek().value === '[') {
                 this.next();
-                const index = this.parseExpression();
+                const index1 = this.parseExpression();
                 this.expect('DELIMITER', ']');
+                
+                // Check for second index (matrix assignment: m[i][j] ← value)
+                if (this.peek().type === 'DELIMITER' && this.peek().value === '[') {
+                    this.next();
+                    const index2 = this.parseExpression();
+                    this.expect('DELIMITER', ']');
+                    this.expect('ARROW');
+                    const value = this.parseExpression();
+                    return { type: 'ArrayAssign2D', target: name, index1, index2, value, line };
+                }
+                
                 this.expect('ARROW');
                 const value = this.parseExpression();
-                return { type: 'ArrayAssign', target: name, index, value, line };
+                return { type: 'ArrayAssign', target: name, index: index1, value, line };
             }
             this.error('Attendu ←, ( ou [ après un identifiant');
         }
@@ -494,11 +505,11 @@ class Parser {
         this.expect('DELIMITER', '(');
         const targets = [];
         const first = this.parseExpression();
-        if (first.type === 'Variable' || first.type === 'ArrayAccess') targets.push(first);
+        if (first.type === 'Variable' || first.type === 'ArrayAccess' || first.type === 'ArrayAccess2D') targets.push(first);
         else this.error('Lire attend un identifiant ou un accès tableau');
         while (this.match('DELIMITER', ',')) {
             const nextExpr = this.parseExpression();
-            if (nextExpr.type === 'Variable' || nextExpr.type === 'ArrayAccess') targets.push(nextExpr);
+            if (nextExpr.type === 'Variable' || nextExpr.type === 'ArrayAccess' || nextExpr.type === 'ArrayAccess2D') targets.push(nextExpr);
             else this.error('Lire attend un identifiant ou un accès tableau');
         }
         this.expect('DELIMITER', ')');
@@ -637,9 +648,18 @@ class Parser {
             }
             if (this.peek().type === 'DELIMITER' && this.peek().value === '[') {
                 this.next();
-                const index = this.parseExpression();
+                const index1 = this.parseExpression();
                 this.expect('DELIMITER', ']');
-                return { type: 'ArrayAccess', name, index, line };
+                
+                // Check for second index (matrix/2D array access: m[i][j])
+                if (this.peek().type === 'DELIMITER' && this.peek().value === '[') {
+                    this.next();
+                    const index2 = this.parseExpression();
+                    this.expect('DELIMITER', ']');
+                    return { type: 'ArrayAccess2D', name, index1, index2, line };
+                }
+                
+                return { type: 'ArrayAccess', name, index: index1, line };
             }
             return { type: 'Variable', name, line };
         }

@@ -13,7 +13,7 @@
         </div>
       </div>
       <div class="editor-wrapper">
-        <CodeMirrorEditor ref="editorRef" :initialContent="code" @update:modelValue="onEditorUpdate"
+        <CodeMirrorEditor ref="editorRef" v-model="code" @update:modelValue="onEditorUpdate"
           placeholder="Écrivez votre algorithme ici..." :dark="darkMode" :fontSize="fontSize" />
       </div>
     </div>
@@ -207,6 +207,9 @@ const {
   setExecTime
 } = useWorker('../../js/worker.js');
 
+const STORAGE_KEY = 'algo-plus-plus-state';
+
+// Initialize code with default value, will be overwritten by loadState if saved state exists
 const code = ref(`Var n, s: entier
 
 Début
@@ -218,8 +221,6 @@ Début
   Fin Tant Que
   Ecrire("La somme est:", s)
 Fin`);
-
-const STORAGE_KEY = 'algo-plus-plus-state';
 
 function showMessage(msg) {
   emit('message', msg);
@@ -263,7 +264,7 @@ function loadState() {
   } catch (e) { /* ignore */ }
 }
 
-// Load preferences
+// Load preferences BEFORE mounting editor
 loadFontSize();
 loadSplitView();
 loadEditorWidth();
@@ -299,6 +300,15 @@ function handleChangeFontSize(e) {
   }
 }
 
+// Auto-save le code quand il change (avec debounce pour éviter trop de sauvegardes)
+let saveTimeout;
+watch(code, (newCode) => {
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    saveState();
+  }, 500); // Sauvegarder 500ms après la dernière frappe
+});
+
 // Raccourcis clavier - appel UNIQUE (dans le setup, via onMounted interne à useKeyboardShortcuts)
 useKeyboardShortcuts([
   createShortcut(true, '=', changeFontSize.bind(null, 1)),
@@ -313,9 +323,9 @@ useKeyboardShortcuts([
 ]);
 
 onMounted(() => {
+  // Load saved state AFTER editor is built, then set content
   loadState();
   
-  // Set content in editor after it's initialized
   nextTick(() => {
     if (editorRef.value && editorRef.value.setContent && code.value) {
       editorRef.value.setContent(code.value);

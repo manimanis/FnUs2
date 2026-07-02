@@ -77,7 +77,7 @@ class Interpreter {
       case 'caractère': return '';
       case 'chaîne': return '';
       default:
-        const td = this.typeDefs[type];
+        const td = this.typeDefs[type.toLowerCase()];
         if (td) {
           const arr = new Array(td.arraySize);
           const defaultVal = this.getDefaultValue(td.elemType);
@@ -106,12 +106,12 @@ class Interpreter {
     let mainBody = null;
 
     for (const decl of ast.declarations) {
-      if (decl.type === 'TypeDecl') this.typeDefs[decl.name] = decl;
+      if (decl.type === 'TypeDecl') this.typeDefs[decl.name.toLowerCase()] = decl;
       else if (decl.type === 'Procedure') this.procedures[decl.name.toLowerCase()] = decl;
       else if (decl.type === 'Function') this.functions[decl.name.toLowerCase()] = decl;
       else if (decl.type === 'VarDecl') {
         for (const name of decl.names) {
-          this.globalEnv[name] = this.getDefaultValue(decl.varType);
+          this.globalEnv[name.toLowerCase()] = this.getDefaultValue(decl.varType);
         }
       } else if (decl.type === 'MainProgram') {
         mainBody = decl.body;
@@ -130,9 +130,10 @@ class Interpreter {
   }
 
   _findEnvWithOwnProperty(env, name) {
+    const lowerName = name.toLowerCase();
     let current = env;
     while (current) {
-      if (Object.prototype.hasOwnProperty.call(current, name)) {
+      if (Object.prototype.hasOwnProperty.call(current, lowerName)) {
         return current;
       }
       current = Object.getPrototypeOf(current);
@@ -152,18 +153,18 @@ class Interpreter {
         const arg = argExprs[i];
         if (arg.type === 'Variable') {
           let targetEnv = this._findEnvWithOwnProperty(callerEnv, arg.name) || this.globalEnv;
-          Object.defineProperty(localEnv, p.name, {
-            get: () => targetEnv[arg.name],
-            set: (v) => { targetEnv[arg.name] = v; },
+          Object.defineProperty(localEnv, p.name.toLowerCase(), {
+            get: () => targetEnv[arg.name.toLowerCase()],
+            set: (v) => { targetEnv[arg.name.toLowerCase()] = v; },
             configurable: true,
             enumerable: true
           });
           continue;
         }
         if (arg.type === 'ArrayAccess') {
-          const arr = await this.evaluateExpression({ type: 'Variable', name: arg.name }, callerEnv);
+          const arr = await this.evaluateExpression({ type: 'Variable', name: arg.name.toLowerCase() }, callerEnv);
           const idx = await this.evaluateExpression(arg.index, callerEnv);
-          Object.defineProperty(localEnv, p.name, {
+          Object.defineProperty(localEnv, p.name.toLowerCase(), {
             get: () => arr[idx],
             set: (v) => { arr[idx] = v; },
             configurable: true,
@@ -172,7 +173,7 @@ class Interpreter {
           continue;
         }
       }
-      localEnv[p.name] = i < argExprs.length
+      localEnv[p.name.toLowerCase()] = i < argExprs.length
         ? await this.evaluateExpression(argExprs[i], callerEnv)
         : this.getDefaultValue(p.paramType);
     }
@@ -187,7 +188,7 @@ class Interpreter {
     const localEnv = Object.create(callerEnv);
     for (let i = 0; i < func.params.length; i++) {
       const p = func.params[i];
-      localEnv[p.name] = i < argExprs.length
+      localEnv[p.name.toLowerCase()] = i < argExprs.length
         ? await this.evaluateExpression(argExprs[i], callerEnv)
         : this.getDefaultValue(p.paramType);
     }
@@ -214,17 +215,38 @@ class Interpreter {
 
     switch (stmt.type) {
       case 'Assign':
-        env[stmt.target] = await this.evaluateExpression(stmt.value, env);
+        env[stmt.target.toLowerCase()] = await this.evaluateExpression(stmt.value, env);
         this._notifyVariableUpdate();
         break;
       case 'ArrayAssign': {
-        const arr = env[stmt.target];
+        const arr = env[stmt.target.toLowerCase()];
         const idx = await this.evaluateExpression(stmt.index, env);
         if (!Array.isArray(arr)) throw new Error(this._formatError(`${stmt.target} n'est pas un tableau`, stmt));
         if (idx < 0 || idx >= arr.length) {
           throw new Error(this._formatError(`Indice ${idx} hors bornes`, stmt));
         }
         arr[idx] = await this.evaluateExpression(stmt.value, env);
+        this._notifyVariableUpdate();
+        break;
+      }
+      case 'ArrayAssign2D': {
+        const arr = env[stmt.target.toLowerCase()];
+        const idx1 = await this.evaluateExpression(stmt.index1, env);
+        const idx2 = await this.evaluateExpression(stmt.index2, env);
+        if (!Array.isArray(arr)) {
+          throw new Error(this._formatError(`${stmt.target} n'est pas une matrice`, stmt));
+        }
+        if (idx1 < 0 || idx1 >= arr.length) {
+          throw new Error(this._formatError(`Indice ligne ${idx1} hors bornes`, stmt));
+        }
+        const row = arr[idx1];
+        if (!Array.isArray(row)) {
+          throw new Error(this._formatError(`Ligne ${idx1} de ${stmt.target} n'est pas un tableau`, stmt));
+        }
+        if (idx2 < 0 || idx2 >= row.length) {
+          throw new Error(this._formatError(`Indice colonne ${idx2} hors bornes`, stmt));
+        }
+        row[idx2] = await this.evaluateExpression(stmt.value, env);
         this._notifyVariableUpdate();
         break;
       }
@@ -250,12 +272,22 @@ class Interpreter {
             if (inputStr === null || inputStr === undefined) inputStr = '';
           }
           if (target.type === 'Variable') {
-            env[target.name] = this.convertInput(inputStr, env[target.name]);
+            env[target.name.toLowerCase()] = this.convertInput(inputStr, env[target.name.toLowerCase()]);
           } else if (target.type === 'ArrayAccess') {
-            const arr = env[target.name];
+            const arr = env[target.name.toLowerCase()];
             if (!Array.isArray(arr)) throw new Error(this._formatError(`${target.name} n'est pas un tableau`, target));
             const idx = await this.evaluateExpression(target.index, env);
             arr[idx] = this.convertInput(inputStr, arr[idx]);
+          } else if (target.type === 'ArrayAccess2D') {
+            const arr = env[target.name.toLowerCase()];
+            if (!Array.isArray(arr)) throw new Error(this._formatError(`${target.name} n'est pas une matrice`, target));
+            const idx1 = await this.evaluateExpression(target.index1, env);
+            const idx2 = await this.evaluateExpression(target.index2, env);
+            if (idx1 < 0 || idx1 >= arr.length) throw new Error(this._formatError(`Indice ligne ${idx1} hors bornes`, target));
+            const row = arr[idx1];
+            if (!Array.isArray(row)) throw new Error(this._formatError(`Ligne ${idx1} n'est pas un tableau`, target));
+            if (idx2 < 0 || idx2 >= row.length) throw new Error(this._formatError(`Indice colonne ${idx2} hors bornes`, target));
+            row[idx2] = this.convertInput(inputStr, row[idx2]);
           }
           this.addOutput(inputStr + '\n');
         }
@@ -270,7 +302,7 @@ class Interpreter {
         break;
       case 'LocalVarDecl':
         for (const name of stmt.names) {
-          env[name] = this.getDefaultValue(stmt.varType);
+          env[name.toLowerCase()] = this.getDefaultValue(stmt.varType);
         }
         break;
       case 'Comment': break;
@@ -326,7 +358,7 @@ class Interpreter {
         this._checkIterationLimit();
         this._checkTimeout();
         if (this._stopped) throw new Error('__STOPPED__');
-        env[stmt.varName] = i;
+        env[stmt.varName.toLowerCase()] = i;
         await this.executeBlock(stmt.body, env);
         if (this._returnValue && this._returnValue.set) return;
         if (this._stopped) throw new Error('__STOPPED__');
@@ -338,7 +370,7 @@ class Interpreter {
         this._checkIterationLimit();
         this._checkTimeout();
         if (this._stopped) throw new Error('__STOPPED__');
-        env[stmt.varName] = i;
+        env[stmt.varName.toLowerCase()] = i;
         await this.executeBlock(stmt.body, env);
         if (this._returnValue && this._returnValue.set) return;
         if (this._stopped) throw new Error('__STOPPED__');
@@ -383,10 +415,10 @@ class Interpreter {
       case 'String': return expr.value;
       case 'Bool': return expr.value;
       case 'Variable':
-        if (expr.name in env) return env[expr.name];
+        if (expr.name.toLowerCase() in env) return env[expr.name.toLowerCase()];
         throw new Error(this._formatError(`Variable '${expr.name}' non définie`, expr));
       case 'ArrayAccess': {
-        const arr = env[expr.name];
+        const arr = env[expr.name.toLowerCase()];
         const idx = await this.evaluateExpression(expr.index, env);
         if (Array.isArray(arr) || typeof arr === 'string') {
           if (idx < 0 || idx >= arr.length) {
@@ -395,6 +427,25 @@ class Interpreter {
           return arr[idx];
         }
         throw new Error(this._formatError(`${expr.name} n'est pas un tableau ni une chaîne`, expr));
+      }
+      case 'ArrayAccess2D': {
+        const arr = env[expr.name.toLowerCase()];
+        const idx1 = await this.evaluateExpression(expr.index1, env);
+        const idx2 = await this.evaluateExpression(expr.index2, env);
+        if (!Array.isArray(arr)) {
+          throw new Error(this._formatError(`${expr.name} n'est pas une matrice`, expr));
+        }
+        if (idx1 < 0 || idx1 >= arr.length) {
+          throw new Error(this._formatError(`Indice ligne ${idx1} hors bornes`, expr));
+        }
+        const row = arr[idx1];
+        if (!Array.isArray(row) && typeof row !== 'string') {
+          throw new Error(this._formatError(`Ligne ${idx1} de ${expr.name} n'est pas un tableau`, expr));
+        }
+        if (idx2 < 0 || idx2 >= row.length) {
+          throw new Error(this._formatError(`Indice colonne ${idx2} hors bornes`, expr));
+        }
+        return row[idx2];
       }
       case 'BinaryOp': return this.evaluateBinaryOp(expr, env);
       case 'UnaryOp': return this.evaluateUnaryOp(expr, env);
@@ -410,35 +461,67 @@ class Interpreter {
 
   async evaluateBinaryOp(expr, env) {
     const left = await this.evaluateExpression(expr.left, env);
-    const right = await this.evaluateExpression(expr.right, env);
     switch (expr.op) {
-      case '+': return left + right;
-      case '-': return left - right;
-      case '*': return left * right;
+      case '+':
+      case '-':
+      case '*':
       case '/':
-        if (right === 0) throw new Error(this._formatError('Division par zéro', expr));
-        return left / right;
       case 'div':
-        if (right === 0) throw new Error(this._formatError('Division entière par zéro', expr));
-        return Math.floor(left / right);
       case 'mod':
       case '%':
-        if (right === 0) throw new Error(this._formatError('Modulo par zéro', expr));
-        return left % right;
-      case '=': return left === right;
-      case '<': return left < right;
-      case '>': return left > right;
+      case '=':
+      case '<':
+      case '>':
       case '<=':
-      case '≤': return left <= right;
+      case '≤':
       case '>=':
-      case '≥': return left >= right;
+      case '≥':
       case '≠':
-      case '!=': return left !== right;
-      case 'Et': return left && right;
-      case 'Ou': return left || right;
-      case '∈':
+      case '!=': {
+        const right = await this.evaluateExpression(expr.right, env);
+        switch (expr.op) {
+          case '+': return left + right;
+          case '-': return left - right;
+          case '*': return left * right;
+          case '/':
+            if (right === 0) throw new Error(this._formatError('Division par zéro', expr));
+            return left / right;
+          case 'div':
+            if (right === 0) throw new Error(this._formatError('Division entière par zéro', expr));
+            return Math.floor(left / right);
+          case 'mod':
+          case '%':
+            if (right === 0) throw new Error(this._formatError('Modulo par zéro', expr));
+            return left % right;
+          case '=': return left === right;
+          case '<': return left < right;
+          case '>': return left > right;
+          case '<=':
+          case '≤': return left <= right;
+          case '>=':
+          case '≥': return left >= right;
+          case '≠':
+          case '!=': return left !== right;
+          default: throw new Error(this._formatError(`Opérateur inconnu: ${expr.op}`, expr));
+        }
+      }
+      case 'Et': {
+        // Short-circuit: if left is falsy, skip evaluating right
+        if (!left) return false;
+        const right = await this.evaluateExpression(expr.right, env);
+        return right;
+      }
+      case 'Ou': {
+        // Short-circuit: if left is truthy, skip evaluating right
+        if (left) return true;
+        const right = await this.evaluateExpression(expr.right, env);
+        return right;
+      }
+      case '∈': {
+        const right = await this.evaluateExpression(expr.right, env);
         if (Array.isArray(right)) return right.includes(left);
         throw new Error(this._formatError("Opérande droit de '∈' doit être un ensemble", expr));
+      }
       default: throw new Error(this._formatError(`Opérateur inconnu: ${expr.op}`, expr));
     }
   }

@@ -32,6 +32,7 @@
 
 ### 🎯 Fonctionnalités principales
 
+- **🔤 Insensibilité à la casse** : Les noms de variables, procédures et fonctions ne font aucune distinction entre majuscules et minuscules (`x` = `X`)
 - **📝 Éditeur de code** avec coloration syntaxique (CodeMirror 6)
 - **▶️ Exécution d'algorithmes** via un interpréteur intégré (Web Worker)
 - **🐍 Conversion en Python** d'un algorithme vers du code Python fonctionnel
@@ -98,6 +99,24 @@ ALGO++ utilise un langage de type pseudo-code français, pédagogique et simple,
 | `booleen`   | Booléen (`Vrai`/`Faux`) |
 | `tableau`   | Tableau typé         |
 
+### Insensibilité à la casse
+
+Le langage ALGO++ ne fait **aucune distinction entre majuscules et minuscules** pour les identifiants (noms de variables, de procédures et de fonctions). Cela signifie que :
+
+- `x` et `X` réfèrent à la **même variable**
+- `Ecrire(x)`, `ECRIRE(X)` et `ecrire(X)` sont équivalents
+- Les paramètres de fonctions/procédures sont également insensibles à la casse
+- Les boucles `Pour` gèrent correctement les variables de boucle quel que soit leur casse
+
+**Exemple :**
+```
+Var x : entier
+Début
+    X <- 10        ← fonctionne (même variable que x)
+    Ecrire(x)      ← affiche 10
+Fin
+```
+
 ### Instructions
 
 - **Affectation** : `variable ← expression`
@@ -114,7 +133,13 @@ ALGO++ utilise un langage de type pseudo-code français, pédagogique et simple,
 
 - **Arithmétiques** : `+`, `-`, `*`, `/`, `div`, `mod`
 - **Comparaison** : `=`, `!=`, `≠`, `<`, `>`, `<=`, `≥`, `≤`, `>=`
-- **Logiques** : `et`, `ou`, `non`
+- **Logiques** : `Et`, `Ou`, `Non`
+
+> **Évaluation court-circuitée** : Les opérateurs logiques `Et` et `Ou` utilisent l'évaluation court-circuitée :
+> - `A Et B` : Si `A` vaut `Faux`, `B` n'est pas évaluée
+> - `A Ou B` : Si `A` vaut `Vrai`, `B` n'est pas évaluée
+> - Cela permet d'écrire des conditions comme `i ≥ 0 Et tableau[i] > 0` sans risque d'erreur
+
 - **Fonctions intégrées** : `Ent()`, `Racine()`, `aléa()`, `long()`, `sous_chaine()`, `pos()`, `valeur()`, `convch()`, `majus()`, `chr()`, `ord()`, `abs()`, `sin()`, `cos()`, `tan()`, `arrondi()`
 
 ---
@@ -371,6 +396,7 @@ Les contributions sont les bienvenues ! Voici comment participer :
 
 ## ⚠️ Limitations connues
 
+- **Insensibilité à la casse** : Les noms de variables sont insensibles à la casse (conformément à la spécification du langage)
 - **Portée des variables** : La portée des variables dans les fonctions/procédures pourrait être améliorée
 - **Gestion des erreurs** : Les messages d'erreur pourraient être plus détaillés avec la position exacte dans le code
 - **Tableaux multidimensionnels** : Support limité aux tableaux à une dimension
