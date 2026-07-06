@@ -35,7 +35,8 @@ class Lexer {
         'si','alors','sinon','fin','pour','faire',
         'pas','repeter',"jusqu'a",'tant','que','procedure',
         'fonction','debut','type','var','retourner','et','ou',
-        'non','vrai','faux','ecrire','lire'
+        'non','vrai','faux','ecrire', 'ecrire_nl','lire',
+        'finsi','finpour','fintantque','tantque'
     ];
 
     static TYPES = ['entier','reel','caractere','chaine','booleen','tableau'];

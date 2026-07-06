@@ -66,6 +66,14 @@ class Parser {
                 continue;
             }
             const v = Parser.normalize(this.peek().value);
+            // Skip "ALGORITHME <nom>" header line
+            if (v === 'algorithme') {
+                this.next(); // consume 'ALGORITHME'
+                if (this.peek().type === 'IDENTIFIER') {
+                    this.next(); // consume program name
+                }
+                continue;
+            }
             if (v === 'type') declarations.push(this.parseTypeDecl());
             else if (v === 'var') {
                 const decls = this.parseVarDecl();
@@ -278,8 +286,8 @@ class Parser {
         if (tokVal === 'si') return this.parseIf();
         if (tokVal === 'pour') return this.parseFor();
         if (tokVal === 'repeter') return this.parseRepeat();
-        if (tokVal === 'tant') return this.parseWhile();
-        if (tokVal === 'ecrire') return this.parseWrite();
+        if (tokVal === 'tant' || tokVal === 'tantque') return this.parseWhile();
+        if (tokVal === 'ecrire' || tokVal === 'écrire' || tokVal === 'ecrire_nl' || tokVal === 'écrire_nl') return this.parseWrite();
         if (tokVal === 'lire') return this.parseRead();
         if (tokVal === 'retourner') return this.parseReturn();
 
@@ -345,6 +353,8 @@ class Parser {
     isEndOfBlock(endValues) {
         const val = Parser.normalize(this.peek().value);
         if (endValues.some(v => Parser.normalize(v) === val)) return true;
+        // Handle compound keywords: FinSi, FinPour, FinTantQue
+        if (val === 'finsi' || val === 'finpour' || val === 'fintantque') return true;
         // Handle two-token endings: Fin Si = Fin + Si, Fin Pour = Fin + Pour, etc.
         if (val === 'fin' && this.isNextToken('Si')) return true;
         if (val === 'fin' && this.isNextToken('Pour')) return true;
@@ -371,14 +381,20 @@ class Parser {
         if (this.match('KEYWORD', 'Sinon')) {
             elseBlock = this.parseUntilIfBlock();
         }
-        // Consume "Fin Si" or just "Fin"
-        if (!this.matchPair('Fin', 'Si')) {
+        // Consume "Fin Si", "FinSi" or just "Fin"
+        const endSiVal = Parser.normalize(this.peek().value);
+        if (endSiVal === 'finsi') {
+            this.next();
+        } else if (!this.matchPair('Fin', 'Si')) {
             if (this.valEq(this.peek(), 'Fin')) this.next();
         }
         return { type: 'If', condition, thenBlock, elseIfBlocks, elseBlock, line: siToken.line };
     }
 
     isSinonSi() {
+        // Support both "Sinon Si" (two tokens) and "SinonSi" (single compound keyword)
+        const val = Parser.normalize(this.peek().value);
+        if (val === 'sinonsi') return true;
         return this.valEq(this.peek(), 'Sinon') && this.isNextToken('Si');
     }
 
@@ -414,9 +430,12 @@ class Parser {
         let step = null;
         if (this.match('KEYWORD', 'Pas')) step = this.parseExpression();
         this.expect('KEYWORD', 'Faire');
-        const body = this.parseUntil(['Fin Pour','Fin']);
-        // Consume "Fin Pour" or just "Fin"
-        if (!this.matchPair('Fin', 'Pour')) {
+        const body = this.parseUntil(['Fin Pour','Fin','FinPour']);
+        // Consume "Fin Pour", "FinPour" or just "Fin"
+        const endPourVal = Parser.normalize(this.peek().value);
+        if (endPourVal === 'finpour') {
+            this.next();
+        } else if (!this.matchPair('Fin', 'Pour')) {
             if (this.valEq(this.peek(), 'Fin')) this.next();
         }
         return { type: 'For', varName: varName.value, start, end, step, body, line: pourToken.line };
@@ -431,13 +450,25 @@ class Parser {
     }
 
     parseWhile() {
-        const tantToken = this.expect('KEYWORD', 'Tant');
-        this.expect('KEYWORD', 'Que');
+        // Support both "Tant Que" (two tokens) and "TantQue" (single compound keyword)
+        const tantVal = Parser.normalize(this.peek().value);
+        let line;
+        if (tantVal === 'tantque') {
+            const token = this.next();
+            line = token.line;
+        } else {
+            const tantToken = this.expect('KEYWORD', 'Tant');
+            line = tantToken.line;
+            this.expect('KEYWORD', 'Que');
+        }
         const condition = this.parseExpression();
         this.expect('KEYWORD', 'Faire');
-        const body = this.parseUntil(['Fin Tant Que','Fin']);
-        // Consume "Fin Tant Que" - but Tant Que is two tokens, so we check differently
-        if (this.valEq(this.peek(), 'Fin')) {
+        const body = this.parseUntil(['Fin Tant Que','Fin','FinTantQue']);
+        // Consume "Fin Tant Que", "FinTantQue" or just "Fin"
+        const endTantVal = Parser.normalize(this.peek().value);
+        if (endTantVal === 'fintantque') {
+            this.next();
+        } else if (this.valEq(this.peek(), 'Fin')) {
             this.next();
             // After Fin, if there's Tant and then Que, consume them
             if (this.valEq(this.peek(), 'Tant')) {
@@ -445,15 +476,17 @@ class Parser {
                 if (this.valEq(this.peek(), 'Que')) this.next();
             }
         }
-        return { type: 'While', condition, body, line: tantToken.line };
+        return { type: 'While', condition, body, line };
     }
 
     parseWrite() {
-        const ecrireToken = this.expect('KEYWORD', 'Ecrire');
+        const ecrireToken = this.next();
+        const isNl = Parser.normalize(ecrireToken.value).endsWith('_nl');
         this.expect('DELIMITER', '(');
         const args = [];
         let sep = null;
         let fin = null;
+        if (isNl && fin === null) fin = '\n';
 
         // Helper: check if current position is a keyword argument
         // Note: 'fin' is a keyword token ('fin'), 'sep' is an identifier token

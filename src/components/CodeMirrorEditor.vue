@@ -33,18 +33,19 @@ const pseudoCodeLanguage = StreamLanguage.define({
     if (stream.match(/^\d+/)) {
       return 'number';
     }
-    if (stream.match(/^[a-zA-Z_][a-zA-Z0-9_'àâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ]*/)) {
+    if (stream.match(/^[a-zA-Z_àâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ][a-zA-Z0-9_'àâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ]*/)) {
       const word = stream.current().toLowerCase();
       const keywords = new Set([
-        'début', 'debut', 'fin', 'si', 'alors', 'sinon',
+        'algorithme', 'algo', 'début', 'debut', 'fin', 'si', 'alors', 'sinon',
         'tant', 'que', 'faire', 'pour', 'pas',
         'répéter', 'repeter', 'jusqu\'à', 'jusqu_a',
         'fonction', 'fonction', 'procédure', 'procedure', 'retourner',
         'var', 'type', 'de',
-        'et', 'ou', 'non', 'mod', 'div'
+        'et', 'ou', 'non', 'mod', 'div',
+        'finsi', 'finpour', 'fintantque', 'tantque', 'sinonsi'
       ]);
-      const types = new Set(['entier', 'booleen', 'chaine', 'caractere']);
-      const builtins = new Set(['ecrire', 'lire',
+      const types = new Set(['entier', 'booleen', 'chaine', 'chaîne', 'caractere', 'caractère', 'reel', 'réel']);
+      const builtins = new Set(['ecrire', 'lire', 'ecrire_nl', 'écrire', 'écrire_nl',
         'long', 'sous_chaine', 'effacer', 'pos', 'valeur', 'convch', 'majus', 'chr', 'ord',
         'abs', 'sin', 'cos', 'tan', 'alea', 'aléa', 'arrondi', 'ent', 'racine']);
       if (types.has(word)) return 'type';
