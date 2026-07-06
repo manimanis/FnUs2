@@ -61,17 +61,19 @@
       
       <div class="header-group header-group-left">
         <router-link to="/fonctions" class="nav-link" title="Référence des fonctions usuelles">📖 Fonctions</router-link>
+        <router-link to="/ascii" class="nav-link" title="Table ASCII">🔤 ASCII</router-link>
         <button class="btn btn-danger" @click="clearAll" title="Tout effacer">🗑 <span class="btn-text">Effacer</span></button>
       </div>
     </header>
 
-    <!-- Header for the fonctions page -->
+    <!-- Header for other pages (fonctions, ascii) -->
     <header v-else>
       <h1>🔷 ALGO++</h1>
-      <span class="subtitle">Fonctions usuelles — Référence interactive</span>
+      <span class="subtitle">{{ $route.name === 'fonctions' ? 'Fonctions usuelles — Référence interactive' : 'Table ASCII — Codes et caractères' }}</span>
       
       <div class="header-group header-group-left">
         <router-link to="/" class="nav-link" title="Retour à l'éditeur">← Éditeur</router-link>
+        <router-link to="/ascii" class="nav-link" title="Table ASCII">🔤 ASCII</router-link>
         <button class="btn btn-info" @click="toggleTheme" :title="darkMode ? 'Mode clair' : 'Mode sombre'">
           {{ darkMode ? '☀️' : '🌙' }}
         </button>

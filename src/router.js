@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import EditorView from './views/EditorView.vue';
 import FonctionsView from './views/FonctionsView.vue';
+import AsciiView from './views/AsciiView.vue';
 
 const routes = [
   {
@@ -12,6 +13,11 @@ const routes = [
     path: '/fonctions',
     name: 'fonctions',
     component: FonctionsView,
+  },
+  {
+    path: '/ascii',
+    name: 'ascii',
+    component: AsciiView,
   },
 ];
 
