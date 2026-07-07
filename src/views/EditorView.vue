@@ -7,13 +7,28 @@
         <span>📝 Éditeur d'algorithme</span>
         <div class="header-actions">
           <span style="font-size:0.7rem;color:var(--comment);">Ctrl+Enter: Exécuter</span>
+          <button class="btn-icon" @click="copyPseudoCode" title="Copier le pseudo-code">📋</button>
           <button class="btn-icon" @click="toggleSplitView" :title="splitView ? 'Vue unifiée' : 'Vue splitée'">
             {{ splitView ? '◀' : '▶' }}
           </button>
         </div>
       </div>
+      <!-- Editor Tabs -->
+      <div class="editor-tabs-bar">
+        <div v-for="tab in tabs" :key="tab.id" class="editor-tab" :class="{ active: tab.id === activeTabId }"
+          @click="switchTab(tab.id)" @dblclick="startRenameTab(tab.id)">
+          <input v-if="renamingTabId === tab.id" v-model="renamingTabValue" class="editor-tab-rename-input"
+            @blur="finishRenameTab" @keyup.enter="finishRenameTab" @keyup.esc="cancelRenameTab" @click.stop
+            ref="renameInputRef" />
+          <span v-else class="editor-tab-name">{{ tab.name }}</span>
+          <button v-if="tabs.length > 1" class="editor-tab-close" @click.stop="closeTab(tab.id)"
+            title="Fermer l'onglet">×</button>
+        </div>
+        <button class="editor-tab-add" @click="addTab" title="Nouvel onglet">+</button>
+      </div>
       <div class="editor-wrapper">
-        <CodeMirrorEditor ref="editorRef" v-model="code" @update:modelValue="onEditorUpdate"
+        <CodeMirrorEditor v-for="tab in tabs" :key="tab.id" :ref="el => setEditorRef(tab.id, el)"
+          v-show="tab.id === activeTabId" v-model="tab.code" @update:modelValue="onEditorUpdate"
           placeholder="Écrivez votre algorithme ici..." :dark="darkMode" :fontSize="fontSize" />
       </div>
     </div>
@@ -118,7 +133,8 @@
       <div class="tabs">
         <div class="tab" :class="{ active: activeTab === 'output' }" @click="activeTab = 'output'">🖥 Sortie</div>
         <div class="tab" :class="{ active: activeTab === 'data' }" @click="activeTab = 'data'">📊 Données</div>
-        <div class="tab" :class="{ active: activeTab === 'variables' }" @click="activeTab = 'variables'">🔢 Variables</div>
+        <div class="tab" :class="{ active: activeTab === 'variables' }" @click="activeTab = 'variables'">🔢 Variables
+        </div>
         <div class="tab" :class="{ active: activeTab === 'python' }" @click="activeTab = 'python'">🐍 Python</div>
       </div>
     </div>
@@ -126,7 +142,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, watch, onMounted, onUnmounted, triggerRef } from 'vue';
+import { ref, nextTick, watch, onMounted, onUnmounted, triggerRef, computed } from 'vue';
 import { Lexer } from '../../js/lexer.js';
 import { Parser } from '../../js/parser.js';
 import { PythonConverter } from '../../js/converter.js';
@@ -174,7 +190,7 @@ const isResizing = ref(false);
 const presentationMode = ref(false);
 const isFullscreen = ref(false);
 const isHorizontalSplit = ref(false);
-const editorRef = ref(null);
+const renameInputRef = ref(null);
 
 // Input inline state
 const showInputModal = ref(false);
@@ -208,9 +224,12 @@ const {
 } = useWorker('../../js/worker.js');
 
 const STORAGE_KEY = 'algo-plus-plus-state';
+const TABS_STORAGE_KEY = 'algo-plus-plus-tabs';
 
-// Initialize code with default value, will be overwritten by loadState if saved state exists
-const code = ref(`Var n, s: entier
+// --- Editor Tabs ---
+let nextTabId = 1;
+
+const defaultCode = `Var n, s: entier
 
 Début
   s ← 0
@@ -220,7 +239,135 @@ Début
     n ← n + 1
   Fin Tant Que
   Ecrire("La somme est:", s)
-Fin`);
+Fin`;
+
+function createTab(name, code) {
+  return {
+    id: nextTabId++,
+    name: name || `Algorithme ${nextTabId - 1}`,
+    code: code || defaultCode
+  };
+}
+
+const tabs = ref([createTab('Algorithme 1', defaultCode)]);
+const activeTabId = ref(tabs.value[0].id);
+const renamingTabId = ref(null);
+const renamingTabValue = ref('');
+
+// Store refs to CodeMirrorEditor instances per tab
+const editorRefs = {};
+
+function setEditorRef(tabId, el) {
+  if (el) {
+    editorRefs[tabId] = el;
+  }
+}
+
+// Computed property to get the current tab's code
+const code = computed({
+  get() {
+    const tab = tabs.value.find(t => t.id === activeTabId.value);
+    return tab ? tab.code : '';
+  },
+  set(newVal) {
+    const tab = tabs.value.find(t => t.id === activeTabId.value);
+    if (tab) {
+      tab.code = newVal;
+    }
+  }
+});
+
+function addTab() {
+  const newTab = createTab(`Algorithme ${tabs.value.length + 1}`, '');
+  tabs.value.push(newTab);
+  activeTabId.value = newTab.id;
+  saveTabsState();
+  nextTick(() => {
+    // Focus the new editor
+    const editor = editorRefs[newTab.id];
+    if (editor && editor.setContent) {
+      editor.setContent('');
+    }
+  });
+}
+
+function closeTab(tabId) {
+  if (tabs.value.length <= 1) return;
+  const idx = tabs.value.findIndex(t => t.id === tabId);
+  if (idx === -1) return;
+  tabs.value.splice(idx, 1);
+  if (activeTabId.value === tabId) {
+    // Switch to the nearest tab
+    const newIdx = Math.min(idx, tabs.value.length - 1);
+    activeTabId.value = tabs.value[newIdx].id;
+  }
+  delete editorRefs[tabId];
+  saveTabsState();
+}
+
+function switchTab(tabId) {
+  if (tabId === activeTabId.value) return;
+  activeTabId.value = tabId;
+}
+
+function startRenameTab(tabId) {
+  const tab = tabs.value.find(t => t.id === tabId);
+  if (!tab) return;
+  renamingTabId.value = tabId;
+  renamingTabValue.value = tab.name;
+  nextTick(() => {
+    if (renameInputRef.value) {
+      renameInputRef.value.focus();
+      renameInputRef.value.select();
+    }
+  });
+}
+
+function finishRenameTab() {
+  if (renamingTabId.value !== null) {
+    const tab = tabs.value.find(t => t.id === renamingTabId.value);
+    if (tab && renamingTabValue.value.trim()) {
+      tab.name = renamingTabValue.value.trim();
+      saveTabsState();
+    }
+  }
+  renamingTabId.value = null;
+  renamingTabValue.value = '';
+}
+
+function cancelRenameTab() {
+  renamingTabId.value = null;
+  renamingTabValue.value = '';
+}
+
+function saveTabsState() {
+  try {
+    const state = tabs.value.map(t => ({ id: t.id, name: t.name, code: t.code }));
+    localStorage.setItem(TABS_STORAGE_KEY, JSON.stringify({ tabs: state, activeTabId: activeTabId.value, nextTabId }));
+  } catch (e) { /* ignore */ }
+}
+
+function loadTabsState() {
+  try {
+    const saved = localStorage.getItem(TABS_STORAGE_KEY);
+    if (saved) {
+      const state = JSON.parse(saved);
+      if (state.tabs && state.tabs.length > 0) {
+        tabs.value = state.tabs;
+        activeTabId.value = state.activeTabId || tabs.value[0].id;
+        nextTabId = state.nextTabId || tabs.value.length + 1;
+        // Ensure activeTabId is valid
+        if (!tabs.value.find(t => t.id === activeTabId.value)) {
+          activeTabId.value = tabs.value[0].id;
+        }
+        return true;
+      }
+    }
+  } catch (e) { /* ignore */ }
+  return false;
+}
+
+// --- End Editor Tabs ---
 
 function showMessage(msg) {
   emit('message', msg);
@@ -255,7 +402,11 @@ function loadState() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const state = JSON.parse(saved);
-      if (state.code !== undefined) code.value = state.code;
+      if (state.code !== undefined) {
+        // Apply to current active tab
+        const tab = tabs.value.find(t => t.id === activeTabId.value);
+        if (tab) tab.code = state.code;
+      }
       if (state.outputLines !== undefined) outputLines.value = state.outputLines;
       if (state.pythonCode !== undefined) pythonCode.value = state.pythonCode;
       if (state.activeTab !== undefined) activeTab.value = state.activeTab;
@@ -279,17 +430,21 @@ function handleEditorClear() { clearAll(); }
 function onEditorUpdate(newValue) {
   // Mettre à jour le code seulement si ce n'est pas un undo/redo
   // (évite les boucles de synchronisation)
-  if (newValue !== code.value) {
-    code.value = newValue;
+  const tab = tabs.value.find(t => t.id === activeTabId.value);
+  if (tab && newValue !== tab.code) {
+    tab.code = newValue;
   }
 }
 
 function handleEditorSetCode(e) {
   // Mettre à jour directement l'éditeur via la méthode exposée
-  if (editorRef.value && editorRef.value.setContent) {
-    editorRef.value.setContent(e.detail.code);
+  const tab = tabs.value.find(t => t.id === activeTabId.value);
+  if (tab) {
+    tab.code = e.detail.code;
+    if (editorRefs[tab.id] && editorRefs[tab.id].setContent) {
+      editorRefs[tab.id].setContent(e.detail.code);
+    }
   }
-  code.value = e.detail.code;
   outputLines.value.splice(0);
   pythonCode.value = '';
 }
@@ -306,7 +461,13 @@ watch(code, (newCode) => {
   clearTimeout(saveTimeout);
   saveTimeout = setTimeout(() => {
     saveState();
+    saveTabsState();
   }, 500); // Sauvegarder 500ms après la dernière frappe
+});
+
+// Also save tabs state when switching tabs
+watch(activeTabId, () => {
+  saveTabsState();
 });
 
 // Raccourcis clavier - appel UNIQUE (dans le setup, via onMounted interne à useKeyboardShortcuts)
@@ -323,15 +484,22 @@ useKeyboardShortcuts([
 ]);
 
 onMounted(() => {
+  // Load tabs state first
+  loadTabsState();
+
   // Load saved state AFTER editor is built, then set content
   loadState();
-  
+
   nextTick(() => {
-    if (editorRef.value && editorRef.value.setContent && code.value) {
-      editorRef.value.setContent(code.value);
-    }
+    // Set content for all tabs that have code
+    tabs.value.forEach(tab => {
+      const editor = editorRefs[tab.id];
+      if (editor && editor.setContent && tab.code) {
+        editor.setContent(tab.code);
+      }
+    });
   });
-  
+
   initWorker();
 
   // Détecter le mode de split selon la taille de la fenêtre
@@ -386,7 +554,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   saveState();
-  
+  saveTabsState();
+
   terminateWorker();
   window.removeEventListener('editor-run', handleEditorRun);
   window.removeEventListener('editor-stop', handleEditorStop);
@@ -567,10 +736,20 @@ function takeScreenshot() {
   showMessage('📷 Capture d\'écran - Utilisez l\'outil de capture de votre système (Win+Shift+S)');
 }
 
+function copyPseudoCode() {
+  const codeSelector = document.querySelector('.editor-panel .codemirror-wrapper:not([style*="display: none"]) .cm-content');
+
+  new Promise((resolve, reject) => {
+    try { copy(codeSelector); resolve(); } catch (e) { reject(e); }
+  })
+    .then(() => showMessage('✅ Pseudo-code copié !'))
+    .catch((e) => showMessage('❌ Échec de la copie ' + e));
+}
+
 function copyPython() {
   if (pythonCode.value) {
     new Promise((resolve, reject) => {
-      try { copy(); resolve(); } catch (e) { reject(e); }
+      try { copy(pythonElement.value?.preElement); resolve(); } catch (e) { reject(e); }
     })
       .then(() => showMessage('✅ Copié !'))
       .catch((e) => showMessage('❌ Copie échouée' + e));
@@ -609,31 +788,39 @@ function getType(value) {
 }
 
 function clearAll() {
-  // Utiliser setContent pour effacer l'éditeur sans perdre l'historique
-  if (editorRef.value && editorRef.value.setContent) {
-    editorRef.value.setContent('');
-  }
-  code.value = '';
+  // Clear all tabs
+  tabs.value = [createTab('Algorithme 1', '')];
+  activeTabId.value = tabs.value[0].id;
+  nextTabId = 2;
+  // Clear editor refs
+  Object.keys(editorRefs).forEach(key => delete editorRefs[key]);
+
   outputLines.value.splice(0);
   pythonCode.value = '';
   dataText.value = '';
   activeTab.value = 'output';
   localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(TABS_STORAGE_KEY);
   showMessage('🗑 Tout effacé');
 }
 
 function cloneWithInlineStyles(element) {
   const clone = element.cloneNode(true);
+
   function applyInlineStyles(source, target) {
     const computedStyle = window.getComputedStyle(source);
     const colorProperties = [
-      "font-family", "font-size", "color", "background-color",
-      "border-color", "border-top-color", "border-right-color",
-      "border-bottom-color", "border-left-color", "outline-color",
-      "text-decoration-color", "box-shadow"
+      "font-family", "font-size", "color", "font-weight", "font-style", "line-height", "margin"
     ];
+    const defaultProperties = {
+      "font-family": "Consolas",
+      "line-height": "1.0"
+    };
     colorProperties.forEach(prop => {
-      const value = computedStyle.getPropertyValue(prop);
+      let value = computedStyle.getPropertyValue(prop);
+      if (defaultProperties[prop]) {
+        value = defaultProperties[prop];
+      }
       if (value && value !== "rgba(0, 0, 0, 0)") {
         target.style.setProperty(prop, value);
       }
@@ -649,11 +836,17 @@ function cloneWithInlineStyles(element) {
   return clone;
 }
 
-function copy() {
-  const el = cloneWithInlineStyles(pythonElement.value?.preElement);
+function copy(htmlElement) {
+  const el = cloneWithInlineStyles(htmlElement);
+  // el.innerHTML = el.innerHTML.replace(/\n([ \t]+)/g, (match, indent) => {
+  //   return '\n' + indent
+  //     .replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;')
+  //     .replace(/ /g, '&nbsp;');
+  // });
+
   el.innerHTML = "<p>" + el.innerHTML
+    .replaceAll('  ', '&nbsp;&nbsp;')
     .replaceAll('\n', '</p><p>')
-    .replaceAll('    ', '&nbsp;&nbsp;&nbsp;&nbsp;')
     + "</p>";
   navigator.clipboard.write([
     new ClipboardItem({
@@ -805,6 +998,7 @@ defineExpose({
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -832,5 +1026,112 @@ defineExpose({
 
 .variables-content::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, #5568d3 0%, #653a8b 100%);
+}
+
+/* === Editor Tabs === */
+.editor-tabs-bar {
+  display: flex;
+  align-items: center;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  padding: 0 4px;
+  min-height: 32px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-shrink: 0;
+}
+
+.editor-tabs-bar::-webkit-scrollbar {
+  height: 3px;
+}
+
+.editor-tabs-bar::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.editor-tab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-right: 1px solid var(--border);
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  white-space: nowrap;
+  user-select: none;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.editor-tab:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.editor-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: var(--bg-primary);
+}
+
+.editor-tab-name {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.editor-tab-close {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0 2px;
+  border-radius: 3px;
+  transition: all 0.15s;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.editor-tab-close:hover {
+  opacity: 1;
+  color: var(--error);
+  background: rgba(244, 67, 54, 0.1);
+}
+
+.editor-tab-add {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+
+.editor-tab-add:hover {
+  color: var(--accent);
+  background: var(--bg-tertiary);
+}
+
+.editor-tab-rename-input {
+  background: var(--bg-primary);
+  border: 1px solid var(--accent);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  padding: 1px 4px;
+  border-radius: 3px;
+  outline: none;
+  width: 120px;
+  font-family: inherit;
 }
 </style>
