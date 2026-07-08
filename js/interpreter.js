@@ -32,7 +32,7 @@ class Interpreter {
     this._yieldCounter++;
     if (this._yieldCounter >= this.yieldInterval) {
       this._yieldCounter = 0;
-      return Promise.resolve();
+      return new Promise(resolve => setTimeout(resolve, 0));
     }
     return null;
   }
