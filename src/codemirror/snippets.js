@@ -316,7 +316,7 @@ const builtInFunctions = [
   'Ecrire(n)', 'Lire(n)',
   'Long(ch)', 'Sous_chaine(ch, d, f)', 'Effacer(ch, d, f)', 'Pos(ch1, ch2)', 'Valeur(ch)', 
   'Convch(n)', 'Majus(ch)', 'Chr(code)', 'Ord(car)',
-  'Abs(x)', 'Sin(x)', 'Cos(x)', 'Tan(x)', 'Alea(d, f)', 'Arrondi(x)', 'Ent(x)', 'Racine(x)'
+  'Abs(x)', 'Sin(x)', 'Cos(x)', 'Tan(x)', 'Alea(d, f)', 'Graine(val)', 'Arrondi(x)', 'Ent(x)', 'Racine(x)'
 ];
 
 export function mySnippetsCompletion(context) {

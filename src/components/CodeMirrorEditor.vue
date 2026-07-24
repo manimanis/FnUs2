@@ -47,7 +47,7 @@ const pseudoCodeLanguage = StreamLanguage.define({
       const types = new Set(['entier', 'booleen', 'chaine', 'chaîne', 'caractere', 'caractère', 'reel', 'réel']);
       const builtins = new Set(['ecrire', 'lire', 'ecrire_nl', 'écrire', 'écrire_nl',
         'long', 'sous_chaine', 'effacer', 'pos', 'valeur', 'convch', 'majus', 'chr', 'ord',
-        'abs', 'sin', 'cos', 'tan', 'alea', 'aléa', 'arrondi', 'ent', 'racine']);
+        'abs', 'sin', 'cos', 'tan', 'alea', 'aléa', 'graine', 'arrondi', 'ent', 'racine']);
       if (types.has(word)) return 'type';
       if (keywords.has(word)) return 'keyword';
       if (builtins.has(word)) return 'builtin';

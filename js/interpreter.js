@@ -22,6 +22,7 @@ class Interpreter {
     this.startTime = null;
     this.yieldInterval = options.yieldInterval || 100;
     this._yieldCounter = 0;
+    this.rng = this.createMulberry32(42);
   }
 
   stop() {
@@ -318,7 +319,7 @@ class Interpreter {
     } else if (this.functions[nameLower]) {
       await this.executeFunction(nameLower, args, env);
     } else {
-      throw new Error(this._formatError(`Procédure/Fonction '${stmt.name}' non définie`, stmt));
+      await this.evaluateCall(stmt, env);
     }
   }
 
@@ -576,10 +577,15 @@ class Interpreter {
       const x = await this.evaluateExpression(args[0], env);
       return /^-?\d+(\.\d+)?$/.test(String(x));
     }
+    if (name === 'graine') {
+      const seed = Math.floor(await this.evaluateExpression(args[0], env));
+      this.rng = this.createMulberry32(seed);
+      return seed;
+    }
     if (name === 'alea' || name === 'aléa') {
       const deb = await this.evaluateExpression(args[0], env);
       const fin = await this.evaluateExpression(args[1], env);
-      return Math.floor(Math.random() * (fin - deb + 1)) + deb;
+      return this.randomInt(deb, fin);
     }
     if (name === 'ent') return Math.floor(await this.evaluateExpression(args[0], env));
     if (this.functions[name]) return await this.executeFunction(name, args, env);
@@ -615,6 +621,20 @@ class Interpreter {
   }
 
   addInput(value) { this.inputBuffer.push(value); }
+
+  // random number generator function
+  createMulberry32(seed) {
+    return () => {
+      let t = (seed += 0x6D2B79F5);
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    }
+  }
+
+  randomInt(min, max) {
+    return Math.floor(this.rng() * (max - min + 1)) + min;
+  }
 }
 
 export { Interpreter };

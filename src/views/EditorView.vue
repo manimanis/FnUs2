@@ -221,7 +221,7 @@ const {
   postMessage: postWorkerMessage,
   setExecuting,
   setExecTime
-} = useWorker('../../js/worker.js');
+} = useWorker('js/worker.js');
 
 const STORAGE_KEY = 'algo-plus-plus-state';
 const TABS_STORAGE_KEY = 'algo-plus-plus-tabs';

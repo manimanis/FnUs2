@@ -33,7 +33,7 @@ class PythonConverter {
     let imports = '';
     if (this.imports.has('numpy')) imports += 'from numpy import array\n';
     if (this.imports.has('math')) imports += 'from math import sqrt\n';
-    if (this.imports.has('random')) imports += 'from random import randint\n';
+    if (this.imports.has('random')) imports += 'from random import randint, seed\n';
     if (imports) imports += '\n';
     return imports + this.code;
   }
@@ -47,8 +47,9 @@ class PythonConverter {
   traverseForImports(stmts) {
     for (const s of stmts || []) {
       if (s.type === 'Call') {
-        if (s.name === 'Racine') this.imports.add('math');
-        if (s.name === 'Aléa') this.imports.add('random');
+        const nameLower = s.name.toLowerCase();
+        if (nameLower === 'racine') this.imports.add('math');
+        if (['aléa', 'alea', 'graine'].includes(nameLower)) this.imports.add('random');
       }
       if (['For', 'While', 'Repeat'].includes(s.type)) this.traverseForImports(s.body);
       if (s.type === 'If') {
@@ -257,7 +258,8 @@ class PythonConverter {
         const args = expr.args.map(a => this.convertExpression(a)).join(', ');
         const name = expr.name.toLowerCase();
         if (name === 'racine') { this.imports.add('math'); return `sqrt(${args})`; }
-        if (name === 'aléa') { this.imports.add('random'); return `randint(${args})`; }
+        if (name === 'aléa' || name === 'alea') { this.imports.add('random'); return `randint(${args})`; }
+        if (name === 'graine') { this.imports.add('random'); return `seed(${args})`; }
         if (name === 'sous_chaine') {
           const [s, d, f] = expr.args.map(a => this.convertExpression(a));
           return `(${s}[${d}-1:${f}])`;

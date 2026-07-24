@@ -506,6 +506,12 @@ const FUNCTIONS = [
     pySyntax: '<span class="cmt">from random import randint</span>\n<span class="kw">na</span> = <span class="fn-c">randint</span>(<span class="num-c">vi</span>, <span class="num-c">vf</span>)',
   },
   {
+    id: 'graine', cat: 'nums',
+    description: 'Initialise la graine (seed) du générateur de nombres aléatoires.',
+    algoSyntax: '<span class="fn-c">graine</span>(<span class="num-c">val</span>)',
+    pySyntax: '<span class="cmt">from random import seed</span>\n<span class="fn-c">seed</span>(<span class="num-c">val</span>)',
+  },
+  {
     id: 'abs', cat: 'nums',
     description: 'Retourne la valeur absolue de x.',
     algoSyntax: '<span class="kw">va</span> ← <span class="fn-c">abs</span>(<span class="num-c">x</span>)',
@@ -1191,24 +1197,24 @@ a:hover {
   white-space: pre-wrap;
 }
 
-.syntax-code :deep(.kw) {
+.syntax-code .kw {
   color: var(--keyword);
   font-weight: 600;
 }
 
-.syntax-code :deep(.fn-c) {
+.syntax-code .fn-c {
   color: var(--function);
 }
 
-.syntax-code :deep(.num-c) {
+.syntax-code .num-c {
   color: var(--number);
 }
 
-.syntax-code :deep(.str-c) {
+.syntax-code .str-c {
   color: var(--string);
 }
 
-.syntax-code :deep(.cmt) {
+.syntax-code .cmt {
   color: var(--comment);
   font-style: italic;
 }

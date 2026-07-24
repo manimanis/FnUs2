@@ -48,7 +48,7 @@
 ### 📚 Documentation interactive
 
 - **💡 Tooltips contextuels** pour tous les mots-clés ALGO++
-- **⚡ Aide intégrée** sur les fonctions (Ent, Racine, aléa, long, etc.)
+- **⚡ Aide intégrée** sur les fonctions (Ent, Racine, aléa, graine, long, etc.)
 - **🔍 Exemples d'utilisation** dans les tooltips
 - **📖 Documentation à la volée** pendant l'écriture du code
 
@@ -127,7 +127,7 @@ Fin
 - **Boucle Répéter** : `Répéter ... Jusqu'à condition`
 - **Fonctions** : `Fonction nom(params): type ... Fin`
 - **Procédures** : `Procédure nom(params) ... Fin`
-- **Retour** : `Retourner expression`
+- **Instructions de génération aléatoire** : `graine(val)` pour initialiser la graine (seed) et rendre les tirages aléatoires déterministes, `aléa(d, f)` pour générer un entier aléatoire dans `[d, f]`
 
 ### Opérateurs
 
@@ -140,7 +140,7 @@ Fin
 > - `A Ou B` : Si `A` vaut `Vrai`, `B` n'est pas évaluée
 > - Cela permet d'écrire des conditions comme `i ≥ 0 Et tableau[i] > 0` sans risque d'erreur
 
-- **Fonctions intégrées** : `Ent()`, `Racine()`, `aléa()`, `long()`, `sous_chaine()`, `pos()`, `valeur()`, `convch()`, `majus()`, `chr()`, `ord()`, `abs()`, `sin()`, `cos()`, `tan()`, `arrondi()`
+- **Fonctions intégrées** : `Ent()`, `Racine()`, `aléa()`, `graine()`, `long()`, `sous_chaine()`, `pos()`, `valeur()`, `convch()`, `majus()`, `chr()`, `ord()`, `abs()`, `sin()`, `cos()`, `tan()`, `arrondi()`
 
 ---
 

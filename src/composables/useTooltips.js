@@ -46,6 +46,7 @@ const FUNCTION_TOOLTIPS = {
   'Ent': 'Convertit un réel en entier (troncature). Ex: Ent(3.7) → 3',
   'Racine': 'Calcule la racine carrée. Ex: Racine(16) → 4',
   'aléa': 'Nombre aléatoire entier. Ex: aléa(1, 100) → nombre entre 1 et 100',
+  'graine': 'Initialise la graine (seed) du générateur aléatoire. Ex: graine(42)',
   'long': 'Retourne la longueur d\'une chaîne. Ex: long("Bonjour") → 7',
   'sous_chaine': 'Extrait une sous-chaîne. Ex: sous_chaine("Bonjour", 0, 3) → "Bon"',
   'pos': 'Position d\'une sous-chaîne. Ex: pos("jour", "Bonjour") → 4',

@@ -7,7 +7,21 @@ export function useWorker(workerPath) {
   let startTime = 0;
 
   const init = () => {
-    worker.value = new Worker(new URL(workerPath, import.meta.url), { type: 'module' });
+    let url;
+    if (workerPath instanceof URL) {
+      url = workerPath;
+    } else if (typeof workerPath === 'string' && (workerPath.startsWith('http://') || workerPath.startsWith('https://'))) {
+      url = workerPath;
+    } else {
+      const cleanPath = typeof workerPath === 'string'
+        ? workerPath.replace(/^(\.\.\/|\.\/|\/)+/, '')
+        : workerPath;
+      const baseUrl = import.meta.env.BASE_URL || '/';
+      const fullBase = new URL(baseUrl, window.location.origin).href;
+      url = new URL(cleanPath, fullBase);
+    }
+
+    worker.value = new Worker(url, { type: 'module' });
     return worker.value;
   };
 
