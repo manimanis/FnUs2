@@ -22,7 +22,7 @@ class Interpreter {
     this.startTime = null;
     this.yieldInterval = options.yieldInterval || 100;
     this._yieldCounter = 0;
-    this.rng = this.createMulberry32(42);
+    this.rng = () => Math.random();
   }
 
   stop() {
@@ -71,14 +71,16 @@ class Interpreter {
   }
 
   getDefaultValue(type) {
-    switch (type) {
+    if (!type) return null;
+    const normalized = String(type).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    switch (normalized) {
       case 'entier': return 0;
-      case 'réel': return 0.0;
-      case 'booléen': return false;
-      case 'caractère': return '';
-      case 'chaîne': return '';
-      default:
-        const td = this.typeDefs[type.toLowerCase()];
+      case 'reel': return 0.0;
+      case 'booleen': return false;
+      case 'caractere': return '';
+      case 'chaine': return '';
+      default: {
+        const td = this.typeDefs[type.toLowerCase()] || this.typeDefs[normalized];
         if (td) {
           const arr = new Array(td.arraySize);
           const defaultVal = this.getDefaultValue(td.elemType);
@@ -86,6 +88,7 @@ class Interpreter {
           return arr;
         }
         return null;
+      }
     }
   }
 
@@ -318,8 +321,10 @@ class Interpreter {
       await this.executeProcedure(nameLower, args, env);
     } else if (this.functions[nameLower]) {
       await this.executeFunction(nameLower, args, env);
-    } else {
+    } else if (['effacer', 'graine'].includes(nameLower)) {
       await this.evaluateCall(stmt, env);
+    } else {
+      throw new Error(this._formatError(`Procédure/Fonction '${stmt.name}' non définie`, stmt));
     }
   }
 
@@ -598,12 +603,14 @@ class Interpreter {
   }
 
   convertInput(inputStr, currentType) {
+    if (typeof inputStr !== 'string') return inputStr;
+    const trimmed = inputStr.trim();
     if (typeof currentType === 'number') {
-      const val = parseFloat(inputStr);
-      return Number.isInteger(val) ? parseInt(inputStr) : val;
+      const val = parseFloat(trimmed);
+      return Number.isNaN(val) ? 0 : (Number.isInteger(val) ? parseInt(trimmed, 10) : val);
     }
     if (typeof currentType === 'boolean') {
-      return inputStr.toLowerCase() === 'vrai' || inputStr === 'true' || inputStr === '1';
+      return trimmed.toLowerCase() === 'vrai' || trimmed === 'true' || trimmed === '1';
     }
     return inputStr;
   }

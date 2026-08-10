@@ -68,11 +68,18 @@ class PythonConverter {
         this.imports.add('numpy');
         break;
       case 'VarDecl': {
-        const tm = { 'entier': 'int()', 'réel': 'float()', 'booléen': 'bool()', 'caractère': '" "', 'chaîne': '""' };
+        const tm = {
+          'entier': 'int()',
+          'réel': 'float()', 'reel': 'float()',
+          'booléen': 'bool()', 'booleen': 'bool()',
+          'caractère': '" "', 'caractere': '" "',
+          'chaîne': '""', 'chaine': '""'
+        };
         for (const name of decl.names) {
-          if (this.typeDefs[decl.varType]) {
-            const td = this.typeDefs[decl.varType];
-            const pyDef = tm[td.elemType] || '0';
+          const td = this.typeDefs[decl.varType] || this.typeDefs[decl.varType.toLowerCase()];
+          if (td) {
+            const elemType = (td.elemType || '').toLowerCase();
+            const pyDef = tm[elemType] || tm[elemType.normalize('NFD').replace(/[\u0300-\u036f]/g, '')] || '0';
             this.code += this.indent() + `${name} = array([${pyDef}]*${td.arraySize})\n`;
           }
         }
@@ -201,16 +208,30 @@ class PythonConverter {
       }
       case 'Call': {
         const args = stmt.args.map(a => this.convertExpression(a)).join(', ');
-        this.code += this.indent() + `${stmt.name}(${args})\n`;
+        const name = stmt.name.toLowerCase();
+        if (name === 'graine') {
+          this.imports.add('random');
+          this.code += this.indent() + `seed(${args})\n`;
+        } else {
+          this.code += this.indent() + `${stmt.name}(${args})\n`;
+        }
         break;
       }
       case 'Return':
         this.code += this.indent() + `return ${this.convertExpression(stmt.value)}\n`;
         break;
       case 'LocalVarDecl': {
-        const tm = { 'entier': 'int()', 'réel': 'float()', 'booléen': 'bool()', 'caractère': '" "', 'chaîne': '""' };
+        const tm = {
+          'entier': 'int()',
+          'réel': 'float()', 'reel': 'float()',
+          'booléen': 'bool()', 'booleen': 'bool()',
+          'caractère': '" "', 'caractere': '" "',
+          'chaîne': '""', 'chaine': '""'
+        };
         for (const name of stmt.names) {
-          this.code += this.indent() + `${name} = ${tm[stmt.varType] || '0'}\n`;
+          const varType = (stmt.varType || '').toLowerCase();
+          const pyDef = tm[varType] || tm[varType.normalize('NFD').replace(/[\u0300-\u036f]/g, '')] || '0';
+          this.code += this.indent() + `${name} = ${pyDef}\n`;
         }
         break;
       }

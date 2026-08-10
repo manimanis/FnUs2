@@ -258,4 +258,103 @@ PROFITATION
         expect(result.output[result.output.length - 3].trim()).toBe("INFESTATION,");
         expect(result.output[result.output.length - 2].trim()).toBe("AFFIRMATION,");
     });
+
+    test('Ex', async () => {
+        const code = `Type Tab1 = Tableau de 31 réel
+
+Procédure Filtrer(TB: Tab1, N: Entier, @TV: Tab1, @M: Entier)
+Var i: Entier
+Début
+  M ← 0
+  Pour i de 0 à N-1 Faire
+    Si TB[i] > 0 Alors
+      TV[M] ← TB[i]
+      M ← M + 1
+    Fin Si
+  Fin Pour
+Fin
+
+Procédure Trier(@TV: Tab1, M: entier)
+Var i, j, min, temp: entier
+Début
+  Pour i de 0 à M-2 Faire
+    min ← i
+    Pour j de i+1 à M-1 Faire
+      Si TV[j] < TV[min] Alors
+        min ← j
+      Fin Si
+    Fin Pour
+    Si min ≠ i Alors
+      temp ← TV[i]
+      TV[i] ← TV[min]
+      TV[min] ← temp
+    Fin Si
+  Fin Pour
+Fin
+
+Fonction Mediane(TV: Tab1, M: entier):Réel
+Var 
+  c: Entier
+  med: réel
+Début
+  c ← M div 2
+  Si M mod 2 = 0 Alors
+    med ← (TV[c] + TV[c - 1]) / 2
+  Sinon
+    med ← TV[c]
+  Fin Si
+  Retourner med
+Fin
+
+Procédure Saisir(@n: entier)
+Début
+  Répéter
+    Ecrire("Entrez un entier : ");
+    Lire(n);
+  Jusqu'à n > 0
+Fin
+
+Procédure Remplir(@t: Tab1, n: entier)
+Var i: entier
+Début
+  Pour i de 0 à n-1 Faire
+    Ecrire("t[", i, "] = ");
+    Lire(t[i])
+  Fin Pour
+Fin
+
+Algorithme Intégration
+Var 
+  N, M: Entier
+  med: réel
+  TB, TV: Tab1
+Début
+  Saisir(N)
+  Remplir(TB, N)
+  Filtrer(TB, N, TV, M)
+  Trier(TV, M)
+  med ← Mediane(TV, M)
+  Ecrire("La production médiane :", med)
+Fin`;
+        function fakeInput(arr) {
+            return () => arr.shift();
+        }
+
+        const arr = `10
+10.5
+0
+-3.2
+14.8
+9.1
+0
+13.6
+15.2
+-1.5
+12.5
+`.split('\n');
+        const { interpreter, result } = await parseAndRun(code, fakeInput(arr));
+        expect(interpreter.getVars().m).toBe(6);
+        expect(interpreter.getVars().tv.slice(0, 6)).toEqual([9.1, 10.5, 12.5, 13.6, 14.8, 15.2]);  
+        expect(interpreter.getVars().med).toBeCloseTo((12.5 + 13.6) / 2, 0);
+    });
 });
