@@ -764,27 +764,35 @@ a:hover {
 
 .layout {
   display: flex;
-  min-height: 100vh;
+  height: calc(100vh - 56px);
+  max-height: calc(100vh - 56px);
+  overflow: hidden;
 }
 
 @media (max-width: 900px) {
   .layout {
     flex-direction: column;
+    height: auto;
+    max-height: none;
+    overflow: auto;
   }
 
   .sidebar {
     width: 100% !important;
+    height: auto !important;
     max-height: 40vh;
   }
 
   .sidebar-nav {
-    max-height: 20vh;
+    max-height: 25vh;
   }
 }
 
 /* ===== SIDEBAR ===== */
 .sidebar {
   width: 280px;
+  height: 100%;
+  max-height: 100%;
   flex-shrink: 0;
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border);
@@ -796,6 +804,7 @@ a:hover {
 .sidebar-header {
   padding: 24px 20px 12px;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .sidebar-logo {
@@ -837,6 +846,7 @@ a:hover {
 
 .search-bar {
   padding: 12px 16px;
+  flex-shrink: 0;
 }
 
 .search-input {
@@ -862,8 +872,30 @@ a:hover {
 
 .sidebar-nav {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 8px 0 20px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
 }
 
 .nav-group {
@@ -923,11 +955,13 @@ a:hover {
 
 /* ===== MAIN ===== */
 .main {
+  flex: 1;
   width: 100%;
   min-width: 0;
+  height: 100%;
+  max-height: 100%;
   padding: 40px;
   overflow-y: auto;
-  max-height: calc(100vh - 60px);
 }
 
 .main-inner {
